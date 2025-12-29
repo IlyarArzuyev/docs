@@ -94,7 +94,7 @@
         <div class="nav-item active" onclick="switchView('uploadView', this)">📤 Отправить</div>
         <div class="nav-item" onclick="switchView('responsesView', this)">📥 Мои ответы</div>
         <div class="nav-item" onclick="switchView('tgNotifyView', this)">🔔 Уведомление в ТГ</div>
-        <div class="nav-item" onclick="window.open('https://t.me/YOUR_USERNAME', '_blank')">💬 Написать в ТГ</div>
+        <div class="nav-item" onclick="window.open('https://t.me/BlckCphr', '_blank')">💬 Написать в ТГ</div>
         <div class="nav-item" onclick="switchView('userSettings', this)">⚙️ Смена пароля</div>
     </div>
     
@@ -112,10 +112,10 @@
     <div id="uploadView" class="view-section active">
         <h2>Новая заявка</h2>
         <div class="card">
-            <label style="color:var(--text-dim)">Только PDF файлы</label>
-            <input type="text" id="title1" placeholder="Описание документа 1"><input type="file" id="file1" accept=".pdf">
+            <label style="color:var(--text-dim)">Описание документа обязательно для заполнения!</label>
+            <input type="text" id="title1" placeholder="Описание документа (например: клиент)"><input type="file" id="file1" accept=".pdf">
             <div style="margin: 15px 0;"></div>
-            <input type="text" id="title2" placeholder="Описание документа 2"><input type="file" id="file2" accept=".pdf">
+            <input type="text" id="title2" placeholder="Описание документа 2 (например: референс)"><input type="file" id="file2" accept=".pdf">
             <textarea id="userComment" placeholder="Комментарий..." rows="3"></textarea>
             <button class="btn" style="width: 100%; margin-top: 20px;" onclick="uploadDocuments()">🚀 Отправить</button>
         </div>
@@ -129,7 +129,20 @@
     <div id="tgNotifyView" class="view-section">
         <h2>Уведомления в Telegram</h2>
         <div class="card">
-            <p style="font-size: 14px; color: var(--text-dim);">Инструкция: Откройте бота @userinfobot или @GetMyIDBot в Telegram, чтобы узнать свой Chat ID.</p>
+            <p style="font-size: 14px; color: var(--text-dim);">
+<b>Инструкция:</b> <br>
+1️⃣ Откройте бота <a href="https://t.me/iDocFlow_bot"
+   target="_blank"
+   rel="noopener noreferrer"
+   style="color: #7fd3ff; font-style: italic; text-decoration: none;">
+  @iDocFlow_bot
+</a> <br>
+2️⃣ Нажмите /start и скопируйте свой <b>Chat ID</b> <br>
+3️⃣ Вставьте его в поле ниже <br>
+<br>
+📩 <b>Готово! Вы будете получать уведомления в Telegram о статусе вашего файла.</b>
+            </p>
+            
             <div id="tgStatus" class="status-badge" style="display:none; background: var(--success); color: white; margin-bottom: 10px;">Ваш chat_id принят</div>
             <input type="text" id="userChatId" placeholder="Введите ваш Chat ID">
             <button id="saveChatBtn" class="btn btn-success" style="width: 100%; margin-top: 15px;" onclick="saveChatId()">Сохранить chat_id</button>
@@ -319,7 +332,7 @@
 
     async function uploadDocuments() {
         const f1 = document.getElementById('file1').files[0], f2 = document.getElementById('file2').files[0];
-        if(!f1 || !f2) return alert("Файлы!");
+        if(!f1 || !f2) return alert("Загрузите файлы!");
         if(f1.type !== "application/pdf" || f2.type !== "application/pdf") return alert("Разрешены только PDF!");
 
         const btn = document.querySelector('#uploadView .btn');

@@ -24,17 +24,12 @@
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; overflow: hidden; }
 
-        /* Мобильная шапка */
         .mobile-header { display: none; position: fixed; top: 0; left: 0; right: 0; height: 60px; background: var(--sidebar-bg); padding: 0 20px; align-items: center; justify-content: space-between; z-index: 500; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        
-        /* Боковая панель */
         .sidebar { width: 280px; background: var(--sidebar-bg); height: 100vh; display: flex; flex-direction: column; padding: 24px; border-right: 1px solid rgba(255,255,255,0.05); transition: var(--transition); z-index: 1000; }
         .main-wrapper { flex: 1; height: 100vh; overflow-y: auto; padding: 30px; background: radial-gradient(circle at top right, #1e293b, #0f172a); }
 
-        /* Карточки и элементы управления */
         .card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); position: relative; }
         input, textarea { width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: white; margin-top: 8px; font-size: 16px; outline: none; }
-        input:focus { border-color: var(--primary); }
         
         .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); margin-top: 10px; }
@@ -52,12 +47,11 @@
 
         #authScreen { position: fixed; inset: 0; background: var(--bg-dark); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .nav-item { padding: 14px 16px; border-radius: 12px; color: var(--text-dim); margin-bottom: 6px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
-        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
         .nav-item.active { background: var(--primary); color: white; }
         
-        .hidden { display: none !important; }
         .view-section { display: none; }
         .view-section.active { display: block; animation: fadeIn 0.3s ease; }
+        .hidden { display: none !important; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -90,7 +84,7 @@
 </header>
 
 <nav class="sidebar" id="sidebar">
-    <div id="userNameHeader" style="font-size: 20px; font-weight: 800; margin-bottom: 30px; color: var(--primary); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis;">PRO PANEL</div>
+    <div id="userNameHeader" style="font-size: 20px; font-weight: 800; margin-bottom: 30px; color: var(--primary); text-transform: uppercase;">PRO PANEL</div>
     
     <div id="userNav">
         <div class="nav-item active" onclick="switchView('uploadView', this)">📤 Отправить</div>
@@ -112,40 +106,35 @@
     <div id="uploadView" class="view-section active">
         <h2>Новая заявка</h2>
         <div class="card">
-            <input type="text" id="title1" placeholder="Описание документа 1">
-            <input type="file" id="file1">
+            <input type="text" id="title1" placeholder="Описание документа 1"><input type="file" id="file1">
             <div style="margin: 15px 0;"></div>
-            <input type="text" id="title2" placeholder="Описание документа 2">
-            <input type="file" id="file2">
-            <textarea id="userComment" placeholder="Ваш комментарий..." rows="3"></textarea>
-            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="uploadDocuments()">🚀 Отправить админу</button>
+            <input type="text" id="title2" placeholder="Описание документа 2"><input type="file" id="file2">
+            <textarea id="userComment" placeholder="Комментарий..." rows="3"></textarea>
+            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="uploadDocuments()">🚀 Отправить</button>
         </div>
     </div>
 
-    <div id="responsesView" class="view-section">
-        <h2>Ответы от администрации</h2>
-        <div id="receivedList"></div>
-    </div>
+    <div id="responsesView" class="view-section"><h2>Ответы</h2><div id="receivedList"></div></div>
 
     <div id="userSettings" class="view-section">
         <h2>Безопасность</h2>
         <div class="card">
-            <label style="color:var(--text-dim); font-size: 14px;">Ваше имя: <b id="displayCurrentName" style="color:white"></b></label>
-            <input type="password" id="newPassSelf" placeholder="Введите новый пароль" style="margin-top: 15px;">
+            <label style="color:var(--text-dim); font-size: 14px;">Ваше имя: <b id="displayCurrentName"></b></label>
+            <input type="password" id="newPassSelf" placeholder="Новый пароль" style="margin-top: 15px;">
             <button class="btn btn-success" style="margin-top: 15px; width: 100%;" onclick="changePasswordSelf()">Обновить пароль</button>
         </div>
     </div>
 
     <div id="adminDashboard" class="view-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2>Входящие заявки</h2>
-            <button class="btn btn-danger" style="padding: 8px 15px; font-size: 13px;" onclick="deleteAllSubmissions()">🗑 Очистить все</button>
+            <h2>Заявки</h2>
+            <button class="btn btn-danger btn-sm" onclick="deleteAllSubmissions()">🗑 Очистить все</button>
         </div>
         <div id="adminDocsList"></div>
     </div>
     
     <div id="adminUsers" class="view-section">
-        <h2>Управление пользователями</h2>
+        <h2>База пользователей</h2>
         <div id="userManagementList"></div>
     </div>
 </main>
@@ -154,7 +143,7 @@
     <div class="card" style="width: 100%; max-width: 500px;">
         <h3 id="modalTitle">Ответ</h3>
         <input type="file" id="adminReplyFile">
-        <textarea id="adminReplyComment" placeholder="Ваш комментарий..." rows="3"></textarea>
+        <textarea id="adminReplyComment" placeholder="Комментарий..." rows="3"></textarea>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
             <button class="btn btn-success" onclick="sendAdminReply()">Отправить</button>
             <button class="btn" style="background:var(--sidebar-bg)" onclick="closeModal()">Отмена</button>
@@ -163,7 +152,6 @@
 </div>
 
 <script>
-    // --- FIREBASE CONFIG ---
     const firebaseConfig = {
         apiKey: "AIzaSyBNJnuKXGqaoRg0ZMdQbHtMe7Tww8nxwSw",
         authDomain: "docflow-2100c.firebaseapp.com",
@@ -179,13 +167,9 @@
 
     let currentUser = null;
 
-    // Авторизация при загрузке
     window.onload = function() {
         const saved = localStorage.getItem('docflow_session');
-        if (saved) { 
-            currentUser = JSON.parse(saved); 
-            showInterface(); 
-        }
+        if (saved) { currentUser = JSON.parse(saved); showInterface(); }
     };
 
     function toggleAuthMode(isReg) {
@@ -193,62 +177,45 @@
         document.getElementById('regForm').classList.toggle('hidden', !isReg);
     }
 
-    // --- ЛОГИКА ВХОДА И РЕГИСТРАЦИИ ---
     async function handleAuth(mode) {
-        const nameInput = document.getElementById(mode === 'login' ? 'loginName' : 'regName');
-        const passInput = document.getElementById(mode === 'login' ? 'loginPass' : 'regPass');
-        const name = nameInput.value.trim();
-        const pass = passInput.value.trim();
-
+        const name = document.getElementById(mode === 'login' ? 'loginName' : 'regName').value.trim();
+        const pass = document.getElementById(mode === 'login' ? 'loginPass' : 'regPass').value.trim();
         if (!name || !pass) return alert("Заполните поля!");
-        
         const userId = generateUserId(name);
 
-        // Вход админа (Ильяр / 123)
         if (name === "Ильяр" && pass === "123") {
             currentUser = { id: 'admin', name: "Ильяр", isAdmin: true };
-            saveAndGo();
-            return;
+            saveAndGo(); return;
         }
 
         if (mode === 'register') {
             const snap = await db.ref('users/' + userId).once('value');
-            if (snap.exists()) return alert("Имя уже занято");
+            if (snap.exists()) return alert("Имя занято");
             await db.ref('users/' + userId).set({ name, pass });
-            alert("Регистрация успешна! Теперь войдите.");
-            toggleAuthMode(false);
+            alert("Готово! Войдите."); toggleAuthMode(false);
         } else {
             const snap = await db.ref('users/' + userId).once('value');
             const data = snap.val();
-            if (!data || data.pass !== pass) return alert("Ошибка: неверное имя или пароль");
+            if (!data || data.pass !== pass) return alert("Ошибка входа");
             currentUser = { id: userId, name: data.name, isAdmin: false };
             saveAndGo();
         }
     }
 
-    function generateUserId(name) {
-        return encodeURIComponent(name.toLowerCase().replace(/\s/g, '_')).replace(/\./g, '%2E');
-    }
-
-    function saveAndGo() {
-        localStorage.setItem('docflow_session', JSON.stringify(currentUser));
-        showInterface();
-    }
+    function generateUserId(n) { return encodeURIComponent(n.toLowerCase().replace(/\s/g, '_')).replace(/\./g, '%2E'); }
+    function saveAndGo() { localStorage.setItem('docflow_session', JSON.stringify(currentUser)); showInterface(); }
 
     function showInterface() {
         document.getElementById('authScreen').classList.add('hidden');
         document.getElementById('userNameHeader').innerText = currentUser.name;
         document.getElementById('mobileLogo').innerText = currentUser.name;
-        if (document.getElementById('displayCurrentName')) {
-            document.getElementById('displayCurrentName').innerText = currentUser.name;
-        }
+        if(document.getElementById('displayCurrentName')) document.getElementById('displayCurrentName').innerText = currentUser.name;
 
         if(currentUser.isAdmin) {
             document.getElementById('adminNav').style.display = 'block';
             document.getElementById('userNav').style.display = 'none';
             switchView('adminDashboard', document.querySelector('#adminNav .nav-item'));
-            listenToAllDocs();
-            listenToUsers();
+            listenToAllDocs(); listenToUsers();
         } else {
             document.getElementById('adminNav').style.display = 'none';
             document.getElementById('userNav').style.display = 'block';
@@ -257,17 +224,8 @@
         }
     }
 
-    function logout() { 
-        if(confirm("Выйти?")) {
-            localStorage.removeItem('docflow_session'); 
-            location.reload(); 
-        }
-    }
-
-    function toggleMenu() { 
-        document.getElementById('sidebar').classList.toggle('open'); 
-        document.getElementById('overlay').classList.toggle('active'); 
-    }
+    function logout() { localStorage.removeItem('docflow_session'); location.reload(); }
+    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
 
     function switchView(id, el) {
         document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
@@ -277,51 +235,46 @@
         if(window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open')) toggleMenu();
     }
 
-    // --- ФУНКЦИИ ПОЛЬЗОВАТЕЛЯ ---
+    // ПОЛЬЗОВАТЕЛЬ
     async function changePasswordSelf() {
-        const newPass = document.getElementById('newPassSelf').value.trim();
-        if(!newPass) return alert("Введите пароль");
-        await db.ref('users/' + currentUser.id).update({ pass: newPass });
-        alert("Пароль успешно изменен!");
-        document.getElementById('newPassSelf').value = "";
+        const p = document.getElementById('newPassSelf').value.trim();
+        if(!p) return alert("Пароль!");
+        await db.ref('users/' + currentUser.id).update({ pass: p });
+        alert("Обновлено!"); document.getElementById('newPassSelf').value = "";
     }
 
     async function uploadDocuments() {
         const f1 = document.getElementById('file1').files[0], f2 = document.getElementById('file2').files[0];
-        if(!f1 || !f2) return alert("Нужно выбрать 2 файла");
+        if(!f1 || !f2) return alert("Файлы!");
         const btn = document.querySelector('#uploadView .btn');
-        btn.innerText = "⏳ Загрузка..."; btn.disabled = true;
+        btn.innerText = "⏳..."; btn.disabled = true;
         try {
             await db.ref('submissions').push({
                 userId: currentUser.id, userName: currentUser.name, date: new Date().toLocaleString(),
                 comment: document.getElementById('userComment').value,
                 files: [
-                    { title: document.getElementById('title1').value || 'Файл 1', name: f1.name, data: await toBase64(f1) },
-                    { title: document.getElementById('title2').value || 'Файл 2', name: f2.name, data: await toBase64(f2) }
+                    { title: document.getElementById('title1').value || 'Док 1', name: f1.name, data: await toBase64(f1) },
+                    { title: document.getElementById('title2').value || 'Док 2', name: f2.name, data: await toBase64(f2) }
                 ]
             });
             alert("Отправлено!"); location.reload();
-        } catch(e) { 
-            alert("Ошибка загрузки");
-            btn.innerText = "🚀 Отправить"; btn.disabled = false; 
-        }
+        } catch(e) { btn.innerText = "🚀"; btn.disabled = false; }
     }
 
-    // --- ФУНКЦИИ АДМИНА ---
+    // АДМИН
     function listenToAllDocs() {
         db.ref('submissions').on('value', snap => {
             const list = document.getElementById('adminDocsList'); list.innerHTML = '';
-            const data = snap.val(); if(!data) return list.innerHTML = '<div class="card">Заявок нет</div>';
+            const data = snap.val(); if(!data) return list.innerHTML = 'Заявок нет';
             Object.keys(data).reverse().forEach(k => {
                 const i = data[k];
                 list.innerHTML += `<div class="card">
-                <button onclick="deleteSubmission('${k}')" style="position:absolute; top:15px; right:15px; background:none; border:none; color:var(--error); font-size:12px; cursor:pointer;">🗑 Удалить</button>
-                <strong>👤 ${i.userName}</strong> <small style="display:block; color:var(--text-dim); margin-top:4px;">${i.date}</small>
-                <p style="margin: 15px 0;">${i.comment || '<i>Без комментария</i>'}</p>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
-                    ${i.files.map(f => `<button class="btn" style="font-size:12px; padding:8px;" onclick="download('${f.data}', '${f.name}')">💾 ${f.title}</button>`).join('')}
+                <button onclick="deleteSubmission('${k}')" style="position:absolute; top:15px; right:15px; background:none; border:none; color:var(--error); cursor:pointer;">🗑 Удалить</button>
+                <strong>👤 ${i.userName}</strong> <small style="display:block; color:var(--text-dim);">${i.date}</small>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0;">
+                    ${i.files.map(f => `<button class="btn btn-sm" onclick="download('${f.data}', '${f.name}')">💾 ${f.title}</button>`).join('')}
                 </div>
-                <button class="btn" style="width:100%; font-size:14px;" onclick="openReplyModal('${i.userId}', '${i.userName}')">✍️ Ответить</button></div>`;
+                <button class="btn" style="width:100%;" onclick="openReplyModal('${i.userId}', '${i.userName}')">✍️ Ответить</button></div>`;
             });
         });
     }
@@ -330,96 +283,66 @@
         db.ref('users').on('value', snap => {
             const list = document.getElementById('userManagementList'); list.innerHTML = '';
             const data = snap.val(); if(!data) return;
-            Object.keys(data).forEach(userId => {
-                const user = data[userId];
+            Object.keys(data).forEach(uid => {
+                const u = data[uid];
                 list.innerHTML += `<div class="card">
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                        <div>
-                            <label style="font-size:11px; color:var(--text-dim); text-transform:uppercase;">Имя пользователя</label>
-                            <input type="text" id="editName_${userId}" value="${user.name}">
-                        </div>
-                        <div>
-                            <label style="font-size:11px; color:var(--text-dim); text-transform:uppercase;">Пароль</label>
-                            <input type="text" id="editPass_${userId}" value="${user.pass}">
-                        </div>
+                        <input type="text" id="n_${uid}" value="${u.name}">
+                        <input type="text" id="p_${uid}" value="${u.pass}">
                     </div>
-                    <button class="btn btn-outline" style="width:100%; margin-top:10px; font-size:13px;" onclick="updateUser('${userId}')">💾 Сохранить изменения</button>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                        <button class="btn btn-success btn-sm" onclick="updateUser('${uid}')">💾 Сохранить</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUser('${uid}')">🗑 Удалить</button>
+                    </div>
                 </div>`;
             });
         });
     }
 
-    async function updateUser(oldUserId) {
-        const newName = document.getElementById(`editName_${oldUserId}`).value.trim();
-        const newPass = document.getElementById(`editPass_${oldUserId}`).value.trim();
-        const newUserId = generateUserId(newName);
-        
-        if(!newName || !newPass) return alert("Поля не могут быть пустыми");
-
-        try {
-            if (oldUserId !== newUserId) {
-                // Если имя изменилось: создаем новый аккаунт и удаляем старый
-                await db.ref('users/' + newUserId).set({ name: newName, pass: newPass });
-                await db.ref('users/' + oldUserId).remove();
-                
-                // Переносим все заявки пользователя на новый ID
-                const submissionsSnap = await db.ref('submissions').once('value');
-                const subs = submissionsSnap.val();
-                if (subs) {
-                    for (let key in subs) {
-                        if (subs[key].userId === oldUserId) {
-                            await db.ref('submissions/' + key).update({ 
-                                userId: newUserId, 
-                                userName: newName 
-                            });
-                        }
-                    }
-                }
-                
-                // Переносим ответы
-                const repliesSnap = await db.ref('replies').once('value');
-                const replies = repliesSnap.val();
-                if (replies) {
-                    for (let key in replies) {
-                        if (replies[key].toUserId === oldUserId) {
-                            await db.ref('replies/' + key).update({ toUserId: newUserId });
-                        }
-                    }
-                }
-                alert(`Имя пользователя успешно изменено на "${newName}".`);
-            } else {
-                // Если изменился только пароль
-                await db.ref('users/' + oldUserId).update({ pass: newPass });
-                alert("Пароль пользователя обновлен!");
-            }
-        } catch (e) { alert("Ошибка при обновлении"); }
+    async function updateUser(oldId) {
+        const n = document.getElementById(`n_${oldId}`).value.trim(), p = document.getElementById(`p_${oldId}`).value.trim();
+        const newId = generateUserId(n);
+        if(!n || !p) return;
+        if(oldId !== newId) {
+            await db.ref('users/' + newId).set({ name: n, pass: p });
+            await db.ref('users/' + oldId).remove();
+            // Перенос заявок
+            const sSnap = await db.ref('submissions').once('value');
+            const sData = sSnap.val();
+            if(sData) for(let k in sData) if(sData[k].userId === oldId) await db.ref('submissions/'+k).update({userId:newId, userName:n});
+        } else await db.ref('users/' + oldId).update({ pass: p });
+        alert("Обновлено!");
     }
 
-    async function deleteSubmission(key) { if(confirm("Удалить эту заявку?")) await db.ref('submissions/' + key).remove(); }
-    async function deleteAllSubmissions() { if(confirm("Очистить ВСЕ заявки из облака?")) await db.ref('submissions').remove(); }
+    async function deleteUser(uid) {
+        if(confirm("Удалить пользователя и ВСЕ его данные?")) {
+            await db.ref('users/' + uid).remove();
+            // Удаление связанных заявок
+            const sSnap = await db.ref('submissions').once('value');
+            const sData = sSnap.val();
+            if(sData) for(let k in sData) if(sData[k].userId === uid) await db.ref('submissions/'+k).remove();
+            // Удаление связанных ответов
+            const rSnap = await db.ref('replies').once('value');
+            const rData = rSnap.val();
+            if(rData) for(let k in rData) if(rData[k].toUserId === uid) await db.ref('replies/'+k).remove();
+            alert("Пользователь удален.");
+        }
+    }
 
-    // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+    async function deleteSubmission(k) { if(confirm("Удалить?")) await db.ref('submissions/' + k).remove(); }
+    async function deleteAllSubmissions() { if(confirm("Очистить ВСЕ?")) await db.ref('submissions').remove(); }
+
     function listenToMyReplies() {
         db.ref('replies').on('value', snap => {
             const list = document.getElementById('receivedList'); list.innerHTML = '';
             const data = snap.val(); let count = 0;
-            if(data) {
-                Object.keys(data).reverse().forEach(k => {
-                    const r = data[k]; 
-                    if(r.toUserId === currentUser.id) {
-                        count++; 
-                        list.innerHTML += `<div class="card">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                                <strong style="color:var(--success)">📩 Ответ получен</strong>
-                                <small>${r.date}</small>
-                            </div>
-                            <p>${r.comment || '<i>Администратор прикрепил файл</i>'}</p>
-                            <button class="btn btn-success" style="width:100%; margin-top:10px;" onclick="download('${r.fileData}', '${r.fileName}')">📥 Скачать документ</button>
-                        </div>`;
-                    }
-                });
-            }
-            if(!count) list.innerHTML = '<div class="card">У вас пока нет новых ответов</div>';
+            if(data) Object.keys(data).reverse().forEach(k => {
+                const r = data[k]; if(r.toUserId === currentUser.id) {
+                    count++; list.innerHTML += `<div class="card"><strong>📩 Ответ</strong> <small>${r.date}</small>
+                    <button class="btn btn-success btn-sm" style="width:100%; margin-top:10px;" onclick="download('${r.fileData}', '${r.fileName}')">📥 Скачать</button></div>`;
+                }
+            });
+            if(!count) list.innerHTML = '<div class="card">Нет ответов</div>';
         });
     }
 
@@ -427,42 +350,14 @@
         const r = new FileReader(); r.readAsDataURL(f);
         r.onload = () => res(r.result); r.onerror = e => rej(e);
     });
-
-    function download(d, n) { 
-        const a = document.createElement("a"); 
-        a.href = d; a.download = n; a.click(); 
-    }
-    
+    function download(d, n) { const a = document.createElement("a"); a.href = d; a.download = n; a.click(); }
     let target = null;
-    function openReplyModal(id, name) { 
-        target = id; 
-        document.getElementById('modalTitle').innerText = name; 
-        document.getElementById('adminModal').classList.remove('hidden'); 
-    }
-
+    function openReplyModal(id, name) { target = id; document.getElementById('modalTitle').innerText = name; document.getElementById('adminModal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('adminModal').classList.add('hidden'); }
-
     async function sendAdminReply() {
-        const f = document.getElementById('adminReplyFile').files[0]; 
-        if(!f) return alert("Прикрепите файл!");
-        
-        const btn = document.querySelector('#adminModal .btn-success');
-        btn.innerText = "⏳..."; btn.disabled = true;
-
-        try {
-            await db.ref('replies').push({ 
-                toUserId: target, 
-                date: new Date().toLocaleString(), 
-                comment: document.getElementById('adminReplyComment').value, 
-                fileName: f.name, 
-                fileData: await toBase64(f) 
-            });
-            alert("Ответ успешно отправлен!");
-            closeModal();
-            document.getElementById('adminReplyFile').value = '';
-            document.getElementById('adminReplyComment').value = '';
-        } catch(e) { alert("Ошибка при отправке"); }
-        btn.innerText = "Отправить"; btn.disabled = false;
+        const f = document.getElementById('adminReplyFile').files[0]; if(!f) return alert("Файл!");
+        await db.ref('replies').push({ toUserId: target, date: new Date().toLocaleString(), comment: document.getElementById('adminReplyComment').value, fileName: f.name, fileData: await toBase64(f) });
+        alert("Отправлено!"); closeModal();
     }
 </script>
 </body>

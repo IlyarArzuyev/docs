@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>DocFlow Ultimate Cloud Pro</title>
+    <title>DocFlow Ultimate Cloud Webhooks</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -113,18 +113,15 @@
             <button class="btn" style="width: 100%; margin-top: 20px;" onclick="uploadDocuments()">🚀 Отправить</button>
         </div>
     </div>
-
     <div id="responsesView" class="view-section"><h2>Ответы</h2><div id="receivedList"></div></div>
-
     <div id="userSettings" class="view-section">
         <h2>Безопасность</h2>
         <div class="card">
-            <label style="color:var(--text-dim); font-size: 14px;">Ваше имя: <b id="displayCurrentName"></b></label>
+            <label style="color:var(--text-dim); font-size: 14px;">Имя: <b id="displayCurrentName"></b></label>
             <input type="password" id="newPassSelf" placeholder="Новый пароль" style="margin-top: 15px;">
             <button class="btn btn-success" style="margin-top: 15px; width: 100%;" onclick="changePasswordSelf()">Обновить пароль</button>
         </div>
     </div>
-
     <div id="adminDashboard" class="view-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2>Заявки</h2>
@@ -132,7 +129,6 @@
         </div>
         <div id="adminDocsList"></div>
     </div>
-    
     <div id="adminUsers" class="view-section">
         <h2>База пользователей</h2>
         <div id="userManagementList"></div>
@@ -152,6 +148,10 @@
 </div>
 
 <script>
+    // --- ПЕРЕМЕННАЯ ДЛЯ ВЕБХУКА ---
+    // Вставьте ваш URL ниже
+    const WEBHOOK_URL = "https://n8n-n8n.sbifer.easypanel.host/webhook/96731ff3-e122-4952-9679-4f7bea4d1a6f"; 
+
     const firebaseConfig = {
         apiKey: "AIzaSyBNJnuKXGqaoRg0ZMdQbHtMe7Tww8nxwSw",
         authDomain: "docflow-2100c.firebaseapp.com",
@@ -235,6 +235,18 @@
         if(window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open')) toggleMenu();
     }
 
+    // --- ФУНКЦИЯ ВЕБХУКА ---
+    async function triggerWebhook(data) {
+        if(!WEBHOOK_URL) return;
+        try {
+            await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        } catch (e) { console.error("Webhook Error:", e); }
+    }
+
     // ПОЛЬЗОВАТЕЛЬ
     async function changePasswordSelf() {
         const p = document.getElementById('newPassSelf').value.trim();
@@ -257,6 +269,14 @@
                     { title: document.getElementById('title2').value || 'Док 2', name: f2.name, data: await toBase64(f2) }
                 ]
             });
+            
+            // Триггер вебхука для заявки
+            triggerWebhook({
+                type: "new_submission",
+                sender: currentUser.name,
+                timestamp: new Date().toLocaleString()
+            });
+
             alert("Отправлено!"); location.reload();
         } catch(e) { btn.innerText = "🚀"; btn.disabled = false; }
     }
@@ -306,7 +326,6 @@
         if(oldId !== newId) {
             await db.ref('users/' + newId).set({ name: n, pass: p });
             await db.ref('users/' + oldId).remove();
-            // Перенос заявок
             const sSnap = await db.ref('submissions').once('value');
             const sData = sSnap.val();
             if(sData) for(let k in sData) if(sData[k].userId === oldId) await db.ref('submissions/'+k).update({userId:newId, userName:n});
@@ -315,17 +334,15 @@
     }
 
     async function deleteUser(uid) {
-        if(confirm("Удалить пользователя и ВСЕ его данные?")) {
+        if(confirm("Удалить пользователя?")) {
             await db.ref('users/' + uid).remove();
-            // Удаление связанных заявок
             const sSnap = await db.ref('submissions').once('value');
             const sData = sSnap.val();
             if(sData) for(let k in sData) if(sData[k].userId === uid) await db.ref('submissions/'+k).remove();
-            // Удаление связанных ответов
             const rSnap = await db.ref('replies').once('value');
             const rData = rSnap.val();
             if(rData) for(let k in rData) if(rData[k].toUserId === uid) await db.ref('replies/'+k).remove();
-            alert("Пользователь удален.");
+            alert("Удалено.");
         }
     }
 
@@ -352,11 +369,22 @@
     });
     function download(d, n) { const a = document.createElement("a"); a.href = d; a.download = n; a.click(); }
     let target = null;
-    function openReplyModal(id, name) { target = id; document.getElementById('modalTitle').innerText = name; document.getElementById('adminModal').classList.remove('hidden'); }
+    let targetName = "";
+    function openReplyModal(id, name) { target = id; targetName = name; document.getElementById('modalTitle').innerText = name; document.getElementById('adminModal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('adminModal').classList.add('hidden'); }
+    
     async function sendAdminReply() {
         const f = document.getElementById('adminReplyFile').files[0]; if(!f) return alert("Файл!");
         await db.ref('replies').push({ toUserId: target, date: new Date().toLocaleString(), comment: document.getElementById('adminReplyComment').value, fileName: f.name, fileData: await toBase64(f) });
+        
+        // Триггер вебхука для ответа админа
+        triggerWebhook({
+            type: "admin_reply",
+            admin: currentUser.name, // Ильяр
+            recipient: targetName,
+            timestamp: new Date().toLocaleString()
+        });
+
         alert("Отправлено!"); closeModal();
     }
 </script>

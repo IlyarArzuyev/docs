@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>DocFlow Cloud Auth</title>
+    <title>DocFlow Ultimate Cloud</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -28,11 +28,12 @@
         .sidebar { width: 280px; background: var(--sidebar-bg); height: 100vh; display: flex; flex-direction: column; padding: 24px; border-right: 1px solid rgba(255,255,255,0.05); transition: var(--transition); z-index: 1000; }
         .main-wrapper { flex: 1; height: 100vh; overflow-y: auto; padding: 30px; background: radial-gradient(circle at top right, #1e293b, #0f172a); }
 
-        .card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); }
+        .card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); position: relative; }
         input, textarea { width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: white; margin-top: 8px; font-size: 16px; }
         
         .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); margin-top: 10px; }
+        .btn-danger { background: var(--error); }
 
         @media (max-width: 768px) {
             .mobile-header { display: flex; }
@@ -61,13 +62,13 @@
             <input type="text" id="loginName" placeholder="Имя">
             <input type="password" id="loginPass" placeholder="Пароль">
             <button class="btn" style="width: 100%; margin-top: 20px;" onclick="handleAuth('login')">Войти</button>
-            <button class="btn btn-outline" style="width: 100%;" onclick="toggleAuthMode(true)">Нет аккаунта? Регистрация</button>
+            <button class="btn btn-outline" style="width: 100%;" onclick="toggleAuthMode(true)">Регистрация</button>
         </div>
         <div id="regForm" class="hidden">
-            <input type="text" id="regName" placeholder="Придумайте Имя">
-            <input type="password" id="regPass" placeholder="Придумайте Пароль">
-            <button class="btn" style="width: 100%; margin-top: 20px; background: var(--success);" onclick="handleAuth('register')">Зарегистрироваться</button>
-            <button class="btn btn-outline" style="width: 100%;" onclick="toggleAuthMode(false)">Уже есть аккаунт? Войти</button>
+            <input type="text" id="regName" placeholder="Ваше Имя">
+            <input type="password" id="regPass" placeholder="Пароль">
+            <button class="btn" style="width: 100%; margin-top: 20px; background: var(--success);" onclick="handleAuth('register')">Создать аккаунт</button>
+            <button class="btn btn-outline" style="width: 100%;" onclick="toggleAuthMode(false)">Назад</button>
         </div>
     </div>
 </div>
@@ -75,19 +76,24 @@
 <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 <header class="mobile-header">
     <button style="background:none; border:none; color:white; font-size:24px;" onclick="toggleMenu()">☰</button>
-    <div style="font-weight: 800;">DOCFLOW</div>
+    <div id="mobileLogo" style="font-weight: 800;">DOCFLOW</div>
     <div style="width:24px;"></div>
 </header>
 
 <nav class="sidebar" id="sidebar">
-    <div style="font-size: 22px; font-weight: 800; margin-bottom: 30px; color: var(--primary);">PRO PANEL</div>
+    <div id="userNameHeader" style="font-size: 20px; font-weight: 800; margin-bottom: 30px; color: var(--primary); text-transform: uppercase;">PRO PANEL</div>
+    
     <div id="userNav">
         <div class="nav-item active" onclick="switchView('uploadView', this)">📤 Отправить</div>
         <div class="nav-item" onclick="switchView('responsesView', this)">📥 Мои ответы</div>
+        <div class="nav-item" onclick="switchView('userSettings', this)">⚙️ Смена пароля</div>
     </div>
+    
     <div id="adminNav" style="display: none;">
         <div class="nav-item" onclick="switchView('adminDashboard', this)">👑 Все заявки</div>
+        <div class="nav-item" onclick="switchView('adminUsers', this)">👥 Пользователи</div>
     </div>
+    
     <div style="margin-top: auto;"><div class="nav-item" onclick="logout()" style="color: var(--error);">🚪 Выйти</div></div>
 </nav>
 
@@ -98,11 +104,31 @@
             <input type="text" id="title1" placeholder="Описание 1"><input type="file" id="file1">
             <input type="text" id="title2" placeholder="Описание 2"><input type="file" id="file2">
             <textarea id="userComment" placeholder="Комментарий..."></textarea>
-            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="uploadDocuments()">🚀 Отправить в облако</button>
+            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="uploadDocuments()">🚀 Отправить</button>
         </div>
     </div>
-    <div id="responsesView" class="view-section"><h2>Ответы от администрации</h2><div id="receivedList"></div></div>
-    <div id="adminDashboard" class="view-section"><h2>Входящие заявки</h2><div id="adminDocsList"></div></div>
+    <div id="responsesView" class="view-section"><h2>Ответы</h2><div id="receivedList"></div></div>
+    <div id="userSettings" class="view-section">
+        <h2>Безопасность</h2>
+        <div class="card">
+            <label>Новый пароль</label>
+            <input type="password" id="newPassSelf" placeholder="Введите новый пароль">
+            <button class="btn" style="margin-top: 15px;" onclick="changePasswordSelf()">Обновить пароль</button>
+        </div>
+    </div>
+
+    <div id="adminDashboard" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Заявки</h2>
+            <button class="btn btn-danger btn-sm" onclick="deleteAllSubmissions()">🗑 Очистить все</button>
+        </div>
+        <div id="adminDocsList"></div>
+    </div>
+    
+    <div id="adminUsers" class="view-section">
+        <h2>Зарегистрированные пользователи</h2>
+        <div id="userManagementList"></div>
+    </div>
 </main>
 
 <div id="adminModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px;">
@@ -146,11 +172,10 @@
     async function handleAuth(mode) {
         const name = document.getElementById(mode === 'login' ? 'loginName' : 'regName').value.trim();
         const pass = document.getElementById(mode === 'login' ? 'loginPass' : 'regPass').value.trim();
+        if (!name || !pass) return alert("Заполните поля");
         
-        if (!name || !pass) return alert("Заполните все поля");
         const userId = encodeURIComponent(name.toLowerCase().replace(/\s/g, '_')).replace(/\./g, '%2E');
 
-        // Логика Админа
         if (name === "Ильяр" && pass === "123") {
             currentUser = { id: 'admin', name: "Ильяр", isAdmin: true };
             saveAndGo();
@@ -159,14 +184,14 @@
 
         if (mode === 'register') {
             const snap = await db.ref('users/' + userId).once('value');
-            if (snap.exists()) return alert("Это имя уже занято");
+            if (snap.exists()) return alert("Имя занято");
             await db.ref('users/' + userId).set({ name, pass });
-            alert("Регистрация успешна! Теперь войдите.");
+            alert("Успешно! Теперь войдите.");
             toggleAuthMode(false);
         } else {
             const snap = await db.ref('users/' + userId).once('value');
             const data = snap.val();
-            if (!data || data.pass !== pass) return alert("Неверное имя или пароль");
+            if (!data || data.pass !== pass) return alert("Ошибка входа");
             currentUser = { id: userId, name: data.name, isAdmin: false };
             saveAndGo();
         }
@@ -179,11 +204,15 @@
 
     function showInterface() {
         document.getElementById('authScreen').classList.add('hidden');
+        document.getElementById('userNameHeader').innerText = currentUser.name;
+        document.getElementById('mobileLogo').innerText = currentUser.name;
+
         if(currentUser.isAdmin) {
             document.getElementById('adminNav').style.display = 'block';
             document.getElementById('userNav').style.display = 'none';
             switchView('adminDashboard', document.querySelector('#adminNav .nav-item'));
             listenToAllDocs();
+            listenToUsers();
         } else {
             document.getElementById('adminNav').style.display = 'none';
             document.getElementById('userNav').style.display = 'block';
@@ -194,8 +223,6 @@
 
     function logout() { localStorage.removeItem('docflow_session'); location.reload(); }
 
-    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
-    
     function switchView(id, el) {
         document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -204,44 +231,85 @@
         if(window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open')) toggleMenu();
     }
 
-    const toBase64 = f => new Promise((res, rej) => {
-        const r = new FileReader(); r.readAsDataURL(f);
-        r.onload = () => res(r.result); r.onerror = e => rej(e);
-    });
+    function toggleMenu() { 
+        document.getElementById('sidebar').classList.toggle('open'); 
+        document.getElementById('overlay').classList.toggle('active'); 
+    }
 
-    function download(d, n) { const a = document.createElement("a"); a.href = d; a.download = n; a.click(); }
+    // ЛОГИКА ПОЛЬЗОВАТЕЛЯ
+    async function changePasswordSelf() {
+        const newPass = document.getElementById('newPassSelf').value.trim();
+        if(!newPass) return alert("Введите новый пароль");
+        await db.ref('users/' + currentUser.id).update({ pass: newPass });
+        alert("Пароль обновлен!");
+        document.getElementById('newPassSelf').value = "";
+    }
 
     async function uploadDocuments() {
         const f1 = document.getElementById('file1').files[0], f2 = document.getElementById('file2').files[0];
-        if(!f1 || !f2) return alert("Выберите файлы!");
+        if(!f1 || !f2) return alert("Нужно 2 файла");
         const btn = document.querySelector('#uploadView .btn');
-        btn.innerText = "Загрузка..."; btn.disabled = true;
+        btn.innerText = "⏳..."; btn.disabled = true;
         try {
             await db.ref('submissions').push({
                 userId: currentUser.id, userName: currentUser.name, date: new Date().toLocaleString(),
                 comment: document.getElementById('userComment').value,
                 files: [
-                    { title: document.getElementById('title1').value || 'Док 1', name: f1.name, data: await toBase64(f1) },
-                    { title: document.getElementById('title2').value || 'Док 2', name: f2.name, data: await toBase64(f2) }
+                    { title: document.getElementById('title1').value || 'Файл 1', name: f1.name, data: await toBase64(f1) },
+                    { title: document.getElementById('title2').value || 'Файл 2', name: f2.name, data: await toBase64(f2) }
                 ]
             });
-            alert("Отправлено!"); location.reload();
-        } catch(e) { alert("Ошибка"); btn.innerText = "Отправить"; btn.disabled = false; }
+            alert("Готово!"); location.reload();
+        } catch(e) { btn.innerText = "🚀"; btn.disabled = false; }
     }
 
+    // ЛОГИКА АДМИНА
     function listenToAllDocs() {
         db.ref('submissions').on('value', snap => {
             const list = document.getElementById('adminDocsList'); list.innerHTML = '';
-            const data = snap.val(); if(!data) return list.innerHTML = '<div class="card">Пусто</div>';
+            const data = snap.val(); if(!data) return list.innerHTML = 'Пусто';
             Object.keys(data).reverse().forEach(k => {
                 const i = data[k];
-                list.innerHTML += `<div class="card"><strong>👤 ${i.userName}</strong> <small>${i.date}</small><p>${i.comment}</p>
+                list.innerHTML += `<div class="card">
+                <button onclick="deleteSubmission('${k}')" style="position:absolute; top:10px; right:10px; background:none; border:none; color:var(--error); cursor:pointer;">🗑 Удалить</button>
+                <strong>👤 ${i.userName}</strong> <small>${i.date}</small><p>${i.comment}</p>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">${i.files.map(f => `<button class="btn btn-sm" onclick="download('${f.data}', '${f.name}')">💾 ${f.title}</button>`).join('')}</div>
                 <button class="btn btn-sm" style="width:100%; margin-top:10px;" onclick="openReplyModal('${i.userId}', '${i.userName}')">✍️ Ответить</button></div>`;
             });
         });
     }
 
+    function listenToUsers() {
+        db.ref('users').on('value', snap => {
+            const list = document.getElementById('userManagementList'); list.innerHTML = '';
+            const data = snap.val(); if(!data) return;
+            Object.keys(data).forEach(userId => {
+                const user = data[userId];
+                list.innerHTML += `<div class="card">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div>
+                            <label style="font-size:12px; color:var(--text-dim)">Имя</label>
+                            <input type="text" value="${user.name}" onchange="updateUser('${userId}', this.value, '${user.pass}')">
+                        </div>
+                        <div>
+                            <label style="font-size:12px; color:var(--text-dim)">Пароль</label>
+                            <input type="text" value="${user.pass}" onchange="updateUser('${userId}', '${user.name}', this.value)">
+                        </div>
+                    </div>
+                </div>`;
+            });
+        });
+    }
+
+    async function updateUser(id, newName, newPass) {
+        await db.ref('users/' + id).update({ name: newName, pass: newPass });
+        alert("Данные пользователя обновлены!");
+    }
+
+    async function deleteSubmission(key) { if(confirm("Удалить заявку?")) await db.ref('submissions/' + key).remove(); }
+    async function deleteAllSubmissions() { if(confirm("Очистить ВСЕ заявки?")) await db.ref('submissions').remove(); }
+
+    // ВСПОМОГАТЕЛЬНЫЕ
     function listenToMyReplies() {
         db.ref('replies').on('value', snap => {
             const list = document.getElementById('receivedList'); list.innerHTML = '';
@@ -256,6 +324,12 @@
         });
     }
 
+    const toBase64 = f => new Promise((res, rej) => {
+        const r = new FileReader(); r.readAsDataURL(f);
+        r.onload = () => res(r.result); r.onerror = e => rej(e);
+    });
+    function download(d, n) { const a = document.createElement("a"); a.href = d; a.download = n; a.click(); }
+    
     let target = null;
     function openReplyModal(id, name) { target = id; document.getElementById('modalTitle').innerText = name; document.getElementById('adminModal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('adminModal').classList.add('hidden'); }

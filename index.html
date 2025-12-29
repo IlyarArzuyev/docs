@@ -3,147 +3,178 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>DocFlow Ultimate Cloud Pro</title>
+    <title>DocFlow Ultimate Cloud Webhooks</title>
+    
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     
     <style>
         :root {
-            --primary: #6366f1; --bg-dark: #0f172a; --sidebar-bg: #1e293b;
-            --card-bg: rgba(30, 41, 59, 0.9); --text-main: #f8fafc;
-            --text-dim: #94a3b8; --success: #22c55e; --error: #ef4444;
+            --primary: #6366f1;
+            --bg-dark: #0f172a;
+            --sidebar-bg: #1e293b;
+            --card-bg: rgba(30, 41, 59, 0.9);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #22c55e;
+            --error: #ef4444;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; overflow: hidden; }
-        
-        /* Боковая панель */
+
+        .mobile-header { display: none; position: fixed; top: 0; left: 0; right: 0; height: 60px; background: var(--sidebar-bg); padding: 0 20px; align-items: center; justify-content: space-between; z-index: 500; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .sidebar { width: 280px; background: var(--sidebar-bg); height: 100vh; display: flex; flex-direction: column; padding: 24px; border-right: 1px solid rgba(255,255,255,0.05); transition: var(--transition); z-index: 1000; }
         .main-wrapper { flex: 1; height: 100vh; overflow-y: auto; padding: 30px; background: radial-gradient(circle at top right, #1e293b, #0f172a); }
-        
+
         .card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); position: relative; }
-        
-        label { display: block; margin-top: 15px; margin-bottom: 5px; color: var(--text-dim); font-size: 14px; font-weight: 500; }
-        input, textarea { width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: white; margin-top: 5px; font-size: 16px; outline: none; }
+        input, textarea { width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: white; margin-top: 8px; font-size: 16px; outline: none; }
         
         .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-sm { padding: 8px 12px; font-size: 13px; }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); margin-top: 10px; }
+        .btn-danger { background: var(--error); }
         .btn-success { background: var(--success); }
 
-        /* Стили инструкции */
-        .instruction-toggle { background: rgba(255,255,255,0.05); color: var(--text-main); width: 100%; justify-content: space-between; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1); }
-        .instruction-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: rgba(0,0,0,0.2); border-radius: 0 0 10px 10px; padding: 0 15px; font-size: 14px; color: var(--text-dim); line-height: 1.6; }
-        .instruction-content.open { max-height: 500px; padding: 15px; margin-top: -5px; border: 1px solid rgba(255,255,255,0.1); border-top: none; }
-        .arrow { transition: transform 0.3s; }
-        .arrow.rotate { transform: rotate(180deg); }
+        @media (max-width: 768px) {
+            .mobile-header { display: flex; }
+            .sidebar { position: fixed; left: -280px; }
+            .sidebar.open { left: 0; }
+            .main-wrapper { padding: 80px 15px 30px 15px; }
+            .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 900; backdrop-filter: blur(4px); }
+            .overlay.active { display: block; }
+        }
 
-        .nav-item { padding: 14px 16px; border-radius: 12px; color: var(--text-dim); margin-bottom: 6px; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+        #authScreen { position: fixed; inset: 0; background: var(--bg-dark); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .nav-item { padding: 14px 16px; border-radius: 12px; color: var(--text-dim); margin-bottom: 6px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
         .nav-item.active { background: var(--primary); color: white; }
         
-        .pdf-preview { width: 100%; height: 350px; border-radius: 8px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); background: #334155; }
-        
-        #authScreen { position: fixed; inset: 0; background: var(--bg-dark); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .view-section { display: none; }
         .view-section.active { display: block; animation: fadeIn 0.3s ease; }
-        
         .hidden { display: none !important; }
-        @media (max-width: 768px) { .sidebar { position: fixed; left: -280px; } .sidebar.open { left: 0; } .main-wrapper { padding: 20px 15px; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Новые стили для предпросмотра */
+        .pdf-preview { width: 100%; height: 400px; border: none; border-radius: 8px; margin-top: 10px; background: white; }
+        .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 6px; margin-top: 5px; display: inline-block; }
     </style>
 </head>
 <body>
 
 <div id="authScreen">
     <div class="card" style="max-width: 400px; width: 100%; text-align: center;">
-        <h1 style="color: var(--primary);">DocFlow</h1>
+        <h1 style="margin-bottom: 10px; color: var(--primary);">DocFlow</h1>
         <div id="authForm">
             <input type="text" id="loginName" placeholder="Имя">
             <input type="password" id="loginPass" placeholder="Пароль">
             <button class="btn" style="width: 100%; margin-top: 20px;" onclick="handleAuth('login')">Войти</button>
-            <button class="btn btn-sm" style="background:none; color:var(--text-dim); margin-top:10px" onclick="toggleAuthMode(true)">Регистрация</button>
+            <button class="btn btn-outline" style="width: 100%;" onclick="toggleAuthMode(true)">Регистрация</button>
         </div>
         <div id="regForm" class="hidden">
             <input type="text" id="regName" placeholder="Ваше Имя">
             <input type="password" id="regPass" placeholder="Придумайте Пароль">
-            <button class="btn btn-success" style="width: 100%; margin-top: 20px;" onclick="handleAuth('register')">Зарегистрироваться</button>
-            <button class="btn btn-sm" style="background:none; color:var(--text-dim); margin-top:10px" onclick="toggleAuthMode(false)">Назад</button>
+            <button class="btn btn-success" style="width: 100%; margin-top: 20px;" onclick="handleAuth('register')">Создать аккаунт</button>
+            <button class="btn btn-outline" style="width: 100%;" onclick="toggleAuthMode(false)">Назад</button>
         </div>
     </div>
 </div>
 
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+<header class="mobile-header">
+    <button style="background:none; border:none; color:white; font-size:24px;" onclick="toggleMenu()">☰</button>
+    <div id="mobileLogo" style="font-weight: 800; text-transform: uppercase; color: var(--primary);">DOCFLOW</div>
+    <div style="width:24px;"></div>
+</header>
+
 <nav class="sidebar" id="sidebar">
-    <div id="userNameHeader" style="font-size: 18px; font-weight: 800; margin-bottom: 30px; color: var(--primary); text-transform: uppercase;">PRO PANEL</div>
+    <div id="userNameHeader" style="font-size: 20px; font-weight: 800; margin-bottom: 30px; color: var(--primary); text-transform: uppercase;">PRO PANEL</div>
+    
     <div id="userNav">
-        <div class="nav-item active" onclick="switchView('uploadView', this)">📤 Отправить PDF</div>
-        <div class="nav-item" onclick="switchView('responsesView', this)">📥 Ответы</div>
-        <div class="nav-item" onclick="switchView('tgNotifyView', this)">🔔 Уведомления</div>
-        <div class="nav-item" onclick="window.open('https://t.me/ИЛЬЯР_ЛОГИН', '_blank')">💬 Написать в TG</div>
+        <div class="nav-item active" onclick="switchView('uploadView', this)">📤 Отправить</div>
+        <div class="nav-item" onclick="switchView('responsesView', this)">📥 Мои ответы</div>
+        <div class="nav-item" onclick="switchView('tgNotifyView', this)">🔔 Уведомление в ТГ</div>
+        <div class="nav-item" onclick="window.open('https://t.me/YOUR_USERNAME', '_blank')">💬 Написать в ТГ</div>
+        <div class="nav-item" onclick="switchView('userSettings', this)">⚙️ Смена пароля</div>
     </div>
+    
     <div id="adminNav" style="display: none;">
-        <div class="nav-item" onclick="switchView('adminDashboard', this)">👑 Заявки</div>
+        <div class="nav-item" onclick="switchView('adminDashboard', this)">👑 Все заявки</div>
         <div class="nav-item" onclick="switchView('adminUsers', this)">👥 Пользователи</div>
     </div>
-    <div style="margin-top: auto;"><div class="nav-item" onclick="logout()" style="color: var(--error);">🚪 Выйти</div></div>
+    
+    <div style="margin-top: auto;">
+        <div class="nav-item" onclick="logout()" style="color: var(--error);">🚪 Выйти</div>
+    </div>
 </nav>
 
 <main class="main-wrapper">
     <div id="uploadView" class="view-section active">
-        <h2>Загрузка документов</h2>
+        <h2>Новая заявка</h2>
         <div class="card">
-            <label>Выписка клиента (PDF)</label>
-            <input type="file" id="file1" accept="application/pdf" onchange="previewPDF(this, 'p1')">
-            <iframe id="p1" class="pdf-preview hidden"></iframe>
-
-            <label>Выписка референс (PDF)</label>
-            <input type="file" id="file2" accept="application/pdf" onchange="previewPDF(this, 'p2')">
-            <iframe id="p2" class="pdf-preview hidden"></iframe>
-
-            <label>Комментарий (необязательно)</label>
-            <textarea id="userComment" placeholder="Добавьте пояснение к файлам..." rows="3"></textarea>
-
-            <button class="btn instruction-toggle" onclick="toggleInstruction()">
-                Инструкция <span class="arrow" id="instArrow">▼</span>
-            </button>
-            <div id="instContent" class="instruction-content">
-                <p>1. Принимаются только файлы в формате <b>PDF</b>.<br>
-                2. "Выписка клиента" — основной файл, "Референс" — вспомогательный.<br>
-                3. Максимальный рекомендуемый размер одного файла — 1Мб.<br>
-                4. После выбора файла появится окно предпросмотра для проверки.</p>
-            </div>
-
-            <button class="btn" style="width: 100%; margin-top: 30px;" onclick="uploadDocuments()">🚀 Отправить на проверку</button>
+            <label style="color:var(--text-dim)">Только PDF файлы</label>
+            <input type="text" id="title1" placeholder="Описание документа 1"><input type="file" id="file1" accept=".pdf">
+            <div style="margin: 15px 0;"></div>
+            <input type="text" id="title2" placeholder="Описание документа 2"><input type="file" id="file2" accept=".pdf">
+            <textarea id="userComment" placeholder="Комментарий..." rows="3"></textarea>
+            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="uploadDocuments()">🚀 Отправить</button>
         </div>
+    </div>
+
+    <div id="responsesView" class="view-section">
+        <h2>Ответы</h2>
+        <div id="receivedList"></div>
     </div>
 
     <div id="tgNotifyView" class="view-section">
         <h2>Уведомления в Telegram</h2>
         <div class="card">
-            <div id="tgStatusBox">
-                <input type="text" id="tgChatId" placeholder="Ваш Chat ID">
-                <button class="btn btn-sm" style="margin-top:10px" onclick="saveChatId()">Принять Chat ID</button>
-            </div>
-            <div id="tgSuccessBox" class="hidden">
-                <p style="color:var(--success); font-weight:bold;">✅ Ваш chat_id принят</p>
-                <button class="btn btn-sm btn-outline" onclick="editChatId()">Изменить chat_id</button>
-            </div>
-            <hr style="opacity:0.1; margin:20px 0">
-            <h4>Где взять Chat ID?</h4>
-            <p style="font-size:14px; color:var(--text-dim);">1. Откройте Telegram и найдите бота <b>@getmyid_bot</b>.<br>
-            2. Нажмите кнопку <b>Start</b>.<br>
-            3. Бот пришлет вам сообщение с вашим ID (цифры). Скопируйте их сюда.</p>
+            <p style="font-size: 14px; color: var(--text-dim);">Инструкция: Откройте бота @userinfobot или @GetMyIDBot в Telegram, чтобы узнать свой Chat ID.</p>
+            <div id="tgStatus" class="status-badge" style="display:none; background: var(--success); color: white; margin-bottom: 10px;">Ваш chat_id принят</div>
+            <input type="text" id="userChatId" placeholder="Введите ваш Chat ID">
+            <button id="saveChatBtn" class="btn btn-success" style="width: 100%; margin-top: 15px;" onclick="saveChatId()">Сохранить chat_id</button>
+            <button id="editChatBtn" class="btn btn-outline" style="width: 100%; display:none;" onclick="enableChatEdit()">Изменить chat_id</button>
         </div>
     </div>
 
-    <div id="responsesView" class="view-section"><h2>Ответы от администрации</h2><div id="receivedList"></div></div>
-    
-    <div id="adminDashboard" class="view-section"><h2>Поступившие заявки</h2><div id="adminDocsList"></div></div>
-    
-    <div id="adminUsers" class="view-section"><h2>Мониторинг пользователей</h2><div id="userList"></div></div>
+    <div id="userSettings" class="view-section">
+        <h2>Безопасность</h2>
+        <div class="card">
+            <label style="color:var(--text-dim); font-size: 14px;">Имя: <b id="displayCurrentName"></b></label>
+            <input type="password" id="newPassSelf" placeholder="Новый пароль" style="margin-top: 15px;">
+            <button class="btn btn-success" style="margin-top: 15px; width: 100%;" onclick="changePasswordSelf()">Обновить пароль</button>
+        </div>
+    </div>
+
+    <div id="adminDashboard" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Заявки</h2>
+            <button class="btn btn-danger btn-sm" onclick="deleteAllSubmissions()">🗑 Очистить все</button>
+        </div>
+        <div id="adminDocsList"></div>
+    </div>
+
+    <div id="adminUsers" class="view-section">
+        <h2>База пользователей</h2>
+        <div id="userManagementList"></div>
+    </div>
 </main>
 
+<div id="adminModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div class="card" style="width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
+        <h3 id="modalTitle">Ответ</h3>
+        <input type="file" id="adminReplyFile" accept=".pdf">
+        <textarea id="adminReplyComment" placeholder="Комментарий..." rows="3"></textarea>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-success" onclick="sendAdminReply()">Отправить</button>
+            <button class="btn" style="background:var(--sidebar-bg)" onclick="closeModal()">Отмена</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    const WEBHOOK_URL = "https://n8n-n8n.sbifer.easypanel.host/webhook/96731ff3-e122-4952-9679-4f7bea4d1a6f";
-    
-    // Вставьте ваши ключи Firebase здесь
+    const WEBHOOK_URL = "https://n8n-n8n.sbifer.easypanel.host/webhook/96731ff3-e122-4952-9679-4f7bea4d1a6f"; 
+
     const firebaseConfig = {
         apiKey: "AIzaSyBNJnuKXGqaoRg0ZMdQbHtMe7Tww8nxwSw",
         authDomain: "docflow-2100c.firebaseapp.com",
@@ -156,151 +187,155 @@
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
     let currentUser = null;
 
     window.onload = function() {
         const saved = localStorage.getItem('docflow_session');
-        if (saved) { currentUser = JSON.parse(saved); showInterface(); updateOnlineStatus(); }
+        if (saved) { 
+            currentUser = JSON.parse(saved); 
+            showInterface(); 
+            updateOnlineStatus();
+        }
     };
 
-    // ОНЛАЙН ТРЕКЕР
     function updateOnlineStatus() {
-        if (!currentUser || currentUser.isAdmin) return;
-        db.ref('users/' + currentUser.id).update({ lastSeen: new Date().toLocaleString() });
+        if(currentUser) {
+            db.ref('users/' + currentUser.id).update({ lastSeen: new Date().toLocaleString() });
+        }
     }
 
-    function toggleAuthMode(reg) {
-        document.getElementById('authForm').classList.toggle('hidden', reg);
-        document.getElementById('regForm').classList.toggle('hidden', !reg);
+    function toggleAuthMode(isReg) {
+        document.getElementById('authForm').classList.toggle('hidden', isReg);
+        document.getElementById('regForm').classList.toggle('hidden', !isReg);
     }
 
     async function handleAuth(mode) {
-        const nameInput = document.getElementById(mode==='login'?'loginName':'regName');
-        const passInput = document.getElementById(mode==='login'?'loginPass':'regPass');
-        const name = nameInput.value.trim();
-        const pass = passInput.value.trim();
-        if(!name || !pass) return alert("Заполните поля!");
+        const name = document.getElementById(mode === 'login' ? 'loginName' : 'regName').value.trim();
+        const pass = document.getElementById(mode === 'login' ? 'loginPass' : 'regPass').value.trim();
+        if (!name || !pass) return alert("Заполните поля!");
+        const userId = generateUserId(name);
 
-        const uid = encodeURIComponent(name.toLowerCase().replace(/\s/g, '_')).replace(/\./g, '%2E');
-
-        if(name === "Ильяр" && pass === "123") {
+        if (name === "Ильяр" && pass === "123") {
             currentUser = { id: 'admin', name: "Ильяр", isAdmin: true };
             saveAndGo(); return;
         }
 
-        try {
-            if(mode === 'register') {
-                await db.ref('users/' + uid).set({ name, pass, lastSeen: 'Только что зарегистрирован' });
-                alert("Успешно! Теперь войдите."); toggleAuthMode(false);
-            } else {
-                const snap = await db.ref('users/' + uid).once('value');
-                const data = snap.val();
-                if(!data || data.pass !== pass) return alert("Неверные данные");
-                currentUser = { id: uid, name: data.name, isAdmin: false };
-                saveAndGo();
-            }
-        } catch(e) { console.error(e); alert("Ошибка базы данных. Проверьте правила (Rules)!"); }
+        if (mode === 'register') {
+            const snap = await db.ref('users/' + userId).once('value');
+            if (snap.exists()) return alert("Имя занято");
+            await db.ref('users/' + userId).set({ name, pass, lastSeen: new Date().toLocaleString() });
+            alert("Готово! Войдите."); toggleAuthMode(false);
+        } else {
+            const snap = await db.ref('users/' + userId).once('value');
+            const data = snap.val();
+            if (!data || data.pass !== pass) return alert("Ошибка входа");
+            currentUser = { id: userId, name: data.name, isAdmin: false, chatId: data.chatId || "" };
+            saveAndGo();
+        }
     }
 
+    function generateUserId(n) { return encodeURIComponent(n.toLowerCase().replace(/\s/g, '_')).replace(/\./g, '%2E'); }
     function saveAndGo() { localStorage.setItem('docflow_session', JSON.stringify(currentUser)); showInterface(); updateOnlineStatus(); }
 
     function showInterface() {
         document.getElementById('authScreen').classList.add('hidden');
         document.getElementById('userNameHeader').innerText = currentUser.name;
+        document.getElementById('mobileLogo').innerText = currentUser.name;
+        if(document.getElementById('displayCurrentName')) document.getElementById('displayCurrentName').innerText = currentUser.name;
+
         if(currentUser.isAdmin) {
             document.getElementById('adminNav').style.display = 'block';
             document.getElementById('userNav').style.display = 'none';
-            switchView('adminDashboard'); listenToAllDocs(); listenToUsers();
+            switchView('adminDashboard', document.querySelector('#adminNav .nav-item'));
+            listenToAllDocs(); listenToUsers();
         } else {
-            loadTgSettings(); listenToMyReplies();
+            document.getElementById('adminNav').style.display = 'none';
+            document.getElementById('userNav').style.display = 'block';
+            switchView('uploadView', document.querySelector('#userNav .nav-item'));
+            listenToMyReplies();
+            loadChatIdStatus();
         }
+    }
+
+    // --- ФУНКЦИИ CHAT ID ---
+    async function loadChatIdStatus() {
+        const snap = await db.ref('users/' + currentUser.id + '/chatId').once('value');
+        const cid = snap.val();
+        if(cid) {
+            document.getElementById('userChatId').value = cid;
+            document.getElementById('userChatId').disabled = true;
+            document.getElementById('saveChatBtn').style.display = 'none';
+            document.getElementById('editChatBtn').style.display = 'block';
+            document.getElementById('tgStatus').style.display = 'inline-block';
+        }
+    }
+
+    async function saveChatId() {
+        const cid = document.getElementById('userChatId').value.trim();
+        if(!cid) return alert("Введите ID");
+        await db.ref('users/' + currentUser.id).update({ chatId: cid });
+        currentUser.chatId = cid;
+        localStorage.setItem('docflow_session', JSON.stringify(currentUser));
+        loadChatIdStatus();
+        triggerWebhook({ type: "chat_id_updated", sender: currentUser.name, chatId: cid });
+    }
+
+    function enableChatEdit() {
+        document.getElementById('userChatId').disabled = false;
+        document.getElementById('saveChatBtn').style.display = 'block';
+        document.getElementById('editChatBtn').style.display = 'none';
+        document.getElementById('tgStatus').style.display = 'none';
     }
 
     function logout() { localStorage.removeItem('docflow_session'); location.reload(); }
+    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('active'); }
 
     function switchView(id, el) {
         document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        if(el) {
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
-        }
+        if(el) el.classList.add('active');
+        if(window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('open')) toggleMenu();
     }
 
-    // PDF ПРЕДПРОСМОТР
-    function previewPDF(input, frameId) {
-        const file = input.files[0];
-        if (file && file.type === "application/pdf") {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const frame = document.getElementById(frameId);
-                frame.src = e.target.result;
-                frame.classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        } else { alert("Только PDF файлы!"); input.value = ""; }
+    async function triggerWebhook(data) {
+        if(!WEBHOOK_URL) return;
+        try {
+            await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({...data, chatId: currentUser.chatId || "not_set"})
+            });
+        } catch (e) { console.error("Webhook Error:", e); }
     }
 
-    function toggleInstruction() {
-        document.getElementById('instContent').classList.toggle('open');
-        document.getElementById('instArrow').classList.toggle('rotate');
+    async function changePasswordSelf() {
+        const p = document.getElementById('newPassSelf').value.trim();
+        if(!p) return alert("Пароль!");
+        await db.ref('users/' + currentUser.id).update({ pass: p });
+        alert("Обновлено!"); document.getElementById('newPassSelf').value = "";
     }
 
-    // TELEGRAM SETTINGS
-    async function saveChatId() {
-        const cid = document.getElementById('tgChatId').value.trim();
-        if(!cid) return;
-        await db.ref('users/' + currentUser.id).update({ tgChatId: cid });
-        // Вебхук
-        fetch(WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ type: "tg_update", user: currentUser.name, chat_id: cid }) });
-        loadTgSettings();
-    }
-
-    function editChatId() {
-        document.getElementById('tgStatusBox').classList.remove('hidden');
-        document.getElementById('tgSuccessBox').classList.add('hidden');
-    }
-
-    async function loadTgSettings() {
-        const snap = await db.ref('users/' + currentUser.id + '/tgChatId').once('value');
-        if(snap.val()) {
-            document.getElementById('tgStatusBox').classList.add('hidden');
-            document.getElementById('tgSuccessBox').classList.remove('hidden');
-        }
-    }
-
-    // ЗАГРУЗКА
     async function uploadDocuments() {
         const f1 = document.getElementById('file1').files[0], f2 = document.getElementById('file2').files[0];
-        if(!f1 || !f2) return alert("Выберите оба PDF файла");
+        if(!f1 || !f2) return alert("Файлы!");
+        if(f1.type !== "application/pdf" || f2.type !== "application/pdf") return alert("Разрешены только PDF!");
+
+        const btn = document.querySelector('#uploadView .btn');
+        btn.innerText = "⏳..."; btn.disabled = true;
         try {
             await db.ref('submissions').push({
-                userId: currentUser.id, userName: currentUser.name,
-                files: [
-                    {name: f1.name, title: 'Выписка клиента', data: await toBase(f1)}, 
-                    {name: f2.name, title: 'Выписка референс', data: await toBase(f2)}
-                ],
+                userId: currentUser.id, userName: currentUser.name, date: new Date().toLocaleString(),
                 comment: document.getElementById('userComment').value,
-                date: new Date().toLocaleString()
+                files: [
+                    { title: document.getElementById('title1').value || 'Док 1', name: f1.name, data: await toBase64(f1) },
+                    { title: document.getElementById('title2').value || 'Док 2', name: f2.name, data: await toBase64(f2) }
+                ]
             });
-            fetch(WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ type: "new_submission", user: currentUser.name }) });
-            alert("Документы отправлены!"); location.reload();
-        } catch(e) { alert("Ошибка при отправке!"); }
-    }
-
-    // АДМИН МОНИТОРИНГ
-    function listenToUsers() {
-        db.ref('users').on('value', snap => {
-            const list = document.getElementById('userList'); list.innerHTML = '';
-            const data = snap.val(); if(!data) return;
-            Object.keys(data).forEach(uid => {
-                const u = data[uid];
-                list.innerHTML += `<div class="card">
-                    <strong>👤 ${u.name}</strong><br>
-                    <small style="color:var(--primary)">🕒 Последняя активность: ${u.lastSeen || 'Нет данных'}</small>
-                </div>`;
-            });
-        });
+            triggerWebhook({ type: "new_submission", sender: currentUser.name, timestamp: new Date().toLocaleString() });
+            alert("Отправлено!"); location.reload();
+        } catch(e) { btn.innerText = "🚀"; btn.disabled = false; }
     }
 
     function listenToAllDocs() {
@@ -310,54 +345,153 @@
             Object.keys(data).reverse().forEach(k => {
                 const i = data[k];
                 list.innerHTML += `<div class="card">
-                    <strong>${i.userName}</strong> <small style="color:var(--text-dim)">${i.date}</small>
-                    <p style="font-size:14px">${i.comment || 'Без комментария'}</p>
-                    <div style="margin:10px 0">
-                        <button class="btn btn-sm" onclick="download('${i.files[0].data}','${i.files[0].name}')">💾 Выписка</button>
-                        <button class="btn btn-sm" onclick="download('${i.files[1].data}','${i.files[1].name}')">💾 Референс</button>
+                <button onclick="deleteSubmission('${k}')" style="position:absolute; top:15px; right:15px; background:none; border:none; color:var(--error); cursor:pointer;">🗑 Удалить</button>
+                <strong>👤 ${i.userName}</strong> <small style="display:block; color:var(--text-dim);">${i.date}</small>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0;">
+                    ${i.files.map(f => `
+                        <div>
+                            <button class="btn btn-sm" style="width:100%" onclick="download('${f.data}', '${f.name}')">💾 ${f.title}</button>
+                            <iframe src="${f.data}" class="pdf-preview"></iframe>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="btn" style="width:100%;" onclick="openReplyModal('${i.userId}', '${i.userName}')">✍️ Ответить</button></div>`;
+            });
+        });
+    }
+
+    function listenToUsers() {
+        db.ref('users').on('value', snap => {
+            const list = document.getElementById('userManagementList'); list.innerHTML = '';
+            const data = snap.val(); if(!data) return;
+            Object.keys(data).forEach(uid => {
+                const u = data[uid];
+                list.innerHTML += `<div class="card">
+                    <div style="margin-bottom:10px;"><small color="var(--primary)">Был в сети: ${u.lastSeen || 'Неизвестно'}</small></div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <input type="text" id="n_${uid}" value="${u.name}">
+                        <input type="text" id="p_${uid}" value="${u.pass}">
                     </div>
-                    <button class="btn btn-sm btn-success" style="width:100%" onclick="adminReply('${i.userId}','${i.userName}')">✍️ Ответить</button>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                        <button class="btn btn-success btn-sm" onclick="updateUser('${uid}')">💾 Сохранить</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUser('${uid}')">🗑 Удалить</button>
+                    </div>
                 </div>`;
             });
         });
     }
 
-    async function adminReply(uid, name) {
-        const msg = prompt("Введите сообщение для " + name);
-        if(!msg) return;
-        await db.ref('replies').push({ toUserId: uid, msg: msg, date: new Date().toLocaleString(), downloaded: false });
-        // Вебхук
-        fetch(WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ type: "admin_reply", admin: "Ильяр", recipient: name }) });
-        alert("Ответ отправлен!");
+    async function updateUser(oldId) {
+        const n = document.getElementById(`n_${oldId}`).value.trim(), p = document.getElementById(`p_${oldId}`).value.trim();
+        const newId = generateUserId(n);
+        if(!n || !p) return;
+        if(oldId !== newId) {
+            const snap = await db.ref('users/' + oldId).once('value');
+            const oldData = snap.val();
+            await db.ref('users/' + newId).set({ ...oldData, name: n, pass: p });
+            await db.ref('users/' + oldId).remove();
+        } else await db.ref('users/' + oldId).update({ pass: p });
+        alert("Обновлено!");
     }
+
+    async function deleteUser(uid) {
+        if(confirm("Удалить пользователя?")) {
+            await db.ref('users/' + uid).remove();
+            alert("Удалено.");
+        }
+    }
+
+    async function deleteSubmission(k) { if(confirm("Удалить?")) await db.ref('submissions/' + k).remove(); }
+    async function deleteAllSubmissions() { if(confirm("Очистить ВСЕ?")) await db.ref('submissions').remove(); }
 
     function listenToMyReplies() {
         db.ref('replies').on('value', snap => {
             const list = document.getElementById('receivedList'); list.innerHTML = '';
-            const data = snap.val();
-            if(data) Object.keys(data).forEach(k => {
-                const r = data[k];
-                if(r.toUserId === currentUser.id) {
-                    list.innerHTML += `<div class="card">
-                        <strong>Ответ от админа</strong> <small>${r.date}</small><br>
-                        <p>${r.msg}</p>
-                        <button class="btn btn-sm ${r.downloaded ? 'btn-outline' : ''}" onclick="markAsRead('${k}')">
-                            ${r.downloaded ? '✅ Прочитано (' + r.readTime + ')' : '👁 Пометить как прочитано'}
-                        </button>
+            const data = snap.val(); let count = 0;
+            if(data) Object.keys(data).reverse().forEach(k => {
+                const r = data[k]; if(r.toUserId === currentUser.id) {
+                    count++; 
+                    const isDownloaded = r.downloaded ? `<span class="status-badge" style="background:var(--success)">Просмотрено</span>` : `<span class="status-badge" style="background:var(--text-dim)">Не просмотрено</span>`;
+                    list.innerHTML += `<div class="card"><strong>📩 Ответ</strong> <small>${r.date}</small>
+                    <p>${r.comment || ''}</p>
+                    <button class="btn btn-success btn-sm" style="width:100%; margin-top:10px;" onclick="userDownloadReply('${k}', '${r.fileData}', '${r.fileName}')">📥 Скачать и смотреть PDF</button>
+                    <iframe src="${r.fileData}" class="pdf-preview"></iframe>
                     </div>`;
                 }
+            });
+            if(!count) list.innerHTML = '<div class="card">Нет ответов</div>';
+        });
+    }
+
+    // Админ видит статус скачивания
+    function listenToAllDocs() {
+        db.ref('submissions').on('value', snap => {
+            const list = document.getElementById('adminDocsList'); list.innerHTML = '';
+            const data = snap.val(); if(!data) return;
+            
+            // Также подтягиваем ответы, чтобы видеть статус скачивания
+            db.ref('replies').once('value', rSnap => {
+                const rData = rSnap.val() || {};
+                Object.keys(data).reverse().forEach(k => {
+                    const i = data[k];
+                    // Ищем ответы этому пользователю
+                    let userRepliesHtml = "";
+                    Object.keys(rData).forEach(rk => {
+                        if(rData[rk].toUserId === i.userId) {
+                            const statusColor = rData[rk].downloaded ? 'var(--success)' : 'var(--text-dim)';
+                            const statusText = rData[rk].downloaded ? 'СКАЧАНО (' + rData[rk].downloadedAt + ')' : 'НЕ СКАЧАНО';
+                            userRepliesHtml += `<div style="font-size:11px; margin-top:5px; color:${statusColor}">${rData[rk].fileName}: ${statusText}</div>`;
+                        }
+                    });
+
+                    list.innerHTML += `<div class="card">
+                    <button onclick="deleteSubmission('${k}')" style="position:absolute; top:15px; right:15px; background:none; border:none; color:var(--error); cursor:pointer;">🗑 Удалить</button>
+                    <strong>👤 ${i.userName}</strong> <small style="display:block; color:var(--text-dim);">${i.date}</small>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0;">
+                        ${i.files.map(f => `<div><button class="btn btn-sm" style="width:100%" onclick="download('${f.data}', '${f.name}')">💾 ${f.title}</button><iframe src="${f.data}" class="pdf-preview"></iframe></div>`).join('')}
+                    </div>
+                    <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; margin-bottom:10px;">
+                        <small>Статус ответов:</small>${userRepliesHtml || '<div>Нет ответов</div>'}
+                    </div>
+                    <button class="btn" style="width:100%;" onclick="openReplyModal('${i.userId}', '${i.userName}')">✍️ Ответить</button></div>`;
+                });
             });
         });
     }
 
-    async function markAsRead(id) {
-        await db.ref('replies/' + id).update({ downloaded: true, readTime: new Date().toLocaleString() });
+    async function userDownloadReply(replyKey, data, name) {
+        await db.ref('replies/' + replyKey).update({ downloaded: true, downloadedAt: new Date().toLocaleString() });
+        download(data, name);
     }
 
-    const toBase = f => new Promise((res) => {
-        const r = new FileReader(); r.readAsDataURL(f); r.onload = () => res(r.result);
+    const toBase64 = f => new Promise((res, rej) => {
+        const r = new FileReader(); r.readAsDataURL(f);
+        r.onload = () => res(r.result); r.onerror = e => rej(e);
     });
+    
     function download(d, n) { const a = document.createElement("a"); a.href = d; a.download = n; a.click(); }
+    
+    let target = null;
+    let targetName = "";
+    function openReplyModal(id, name) { target = id; targetName = name; document.getElementById('modalTitle').innerText = name; document.getElementById('adminModal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('adminModal').classList.add('hidden'); }
+    
+    async function sendAdminReply() {
+        const f = document.getElementById('adminReplyFile').files[0]; if(!f) return alert("Файл!");
+        if(f.type !== "application/pdf") return alert("Разрешены только PDF!");
+        
+        await db.ref('replies').push({ 
+            toUserId: target, 
+            date: new Date().toLocaleString(), 
+            comment: document.getElementById('adminReplyComment').value, 
+            fileName: f.name, 
+            fileData: await toBase64(f),
+            downloaded: false
+        });
+        
+        triggerWebhook({ type: "admin_reply", admin: currentUser.name, recipient: targetName, timestamp: new Date().toLocaleString() });
+        alert("Отправлено!"); closeModal();
+    }
 </script>
 </body>
 </html>

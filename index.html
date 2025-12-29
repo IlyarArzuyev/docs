@@ -1,1247 +1,380 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Система обмена документами</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DocFlow Pro</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-dark: #0f172a;
+            --sidebar-bg: #1e293b;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent: #00f2fe;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-<style>
-:root {
-  --primary-color: #4facfe;
-  --secondary-color: #00f2fe;
-  --dark-bg: #0f2027;
-  --light-bg: rgba(255, 255, 255, 0.1);
-  --success-color: #2ecc71;
-  --error-color: #e74c3c;
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.85);
-  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+        * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
 
-* { 
-  box-sizing: border-box; 
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-}
+        body {
+            margin: 0;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: var(--dark-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: auto;
-  padding: 20px;
-}
+        /* --- ЭКРАН ВХОДА --- */
+        #authScreen {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
 
-/* Переключатель режимов */
-.mode-switcher {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-}
+        #authScreen.hidden { opacity: 0; pointer-events: none; transform: scale(1.1); }
 
-.mode-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: var(--transition-smooth);
-}
+        .auth-card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
 
-.mode-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            transition: var(--transition);
+            position: relative;
+            z-index: 100;
+        }
 
-/* Основной контейнер */
-.container {
-  width: 100%;
-  max-width: 900px;
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
+        .sidebar-header {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 40px;
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-/* Карточки */
-.card {
-  padding: 30px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: var(--text-primary);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-dim);
+            text-decoration: none;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-.card h2 {
-  margin: 0 0 20px 0;
-  font-size: 24px;
-  color: var(--primary-color);
-  text-align: center;
-}
+        .nav-item:hover, .nav-item.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+        }
 
-/* Формы */
-.form-group {
-  margin-bottom: 20px;
-}
+        /* --- ОСНОВНОЙ КОНТЕНТ --- */
+        .main-wrapper {
+            flex: 1;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 40px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
+        .view-section { display: none; animation: fadeIn 0.4s ease-out; }
+        .view-section.active { display: block; }
 
-input[type="text"],
-input[type="file"],
-textarea {
-  width: 100%;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-  font-size: 15px;
-  transition: var(--transition-smooth);
-}
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 24px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(10px);
+        }
 
-input[type="text"]:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
-}
+        h2 { margin-top: 0; font-weight: 600; font-size: 22px; }
 
-textarea {
-  min-height: 80px;
-  resize: vertical;
-}
+        /* --- КНОПКИ И ПОЛЯ --- */
+        input, textarea {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: white;
+            margin-top: 8px;
+            outline: none;
+            transition: var(--transition);
+        }
 
-/* Кнопки */
-.btn {
-  padding: 14px 24px;
-  border-radius: 12px;
-  border: none;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition-smooth);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); }
 
-.btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  color: white;
-}
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+        }
 
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
-}
+        .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            background: rgba(255,255,255,0.1);
+        }
 
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.btn-small {
-  padding: 8px 16px;
-  font-size: 14px;
-}
-
-.btn-download {
-  background: rgba(46, 204, 113, 0.2);
-  color: var(--success-color);
-  border: 1px solid rgba(46, 204, 113, 0.3);
-}
-
-.btn-download:hover {
-  background: rgba(46, 204, 113, 0.3);
-}
-
-/* Списки документов */
-.documents-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  max-height: 400px;
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-.document-item {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 15px;
-  transition: var(--transition-smooth);
-}
-
-.document-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.document-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.document-title {
-  font-weight: 600;
-  color: var(--primary-color);
-  font-size: 16px;
-}
-
-.document-user {
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 4px 8px;
-  border-radius: 8px;
-}
-
-.document-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.document-info {
-  flex: 1;
-}
-
-.document-description {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 5px;
-}
-
-.document-date {
-  font-size: 12px;
-  color: var(--text-secondary);
-  opacity: 0.7;
-}
-
-.document-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.document-files {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.1);
-}
-
-.file-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-  margin-bottom: 5px;
-}
-
-.file-info {
-  flex: 1;
-}
-
-.file-name {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.file-size {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.file-actions {
-  display: flex;
-  gap: 5px;
-}
-
-/* Статус */
-.status {
-  padding: 12px;
-  border-radius: 12px;
-  margin: 15px 0;
-  text-align: center;
-  font-weight: 500;
-}
-
-.status-success {
-  background: rgba(46, 204, 113, 0.15);
-  color: var(--success-color);
-  border: 1px solid rgba(46, 204, 113, 0.3);
-}
-
-.status-error {
-  background: rgba(231, 76, 60, 0.15);
-  color: var(--error-color);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-}
-
-.status-info {
-  background: rgba(52, 152, 219, 0.15);
-  color: #3498db;
-  border: 1px solid rgba(52, 152, 219, 0.3);
-}
-
-.status-warning {
-  background: rgba(243, 156, 18, 0.15);
-  color: #f39c12;
-  border: 1px solid rgba(243, 156, 18, 0.3);
-}
-
-/* Прогресс бар */
-.progress-container {
-  margin: 20px 0;
-  display: none;
-}
-
-.progress-container.visible {
-  display: block;
-  animation: fadeIn 0.3s ease;
-}
-
-.progress-bar {
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-  width: 0%;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  text-align: center;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-/* Модальное окно */
-.modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.modal.active {
-  display: flex;
-  animation: fadeIn 0.3s ease;
-}
-
-.modal-content {
-  background: var(--dark-bg);
-  border-radius: 20px;
-  padding: 30px;
-  max-width: 500px;
-  width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-/* Утилиты */
-.hidden {
-  display: none !important;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.mt-20 {
-  margin-top: 20px;
-}
-
-.mb-20 {
-  margin-bottom: 20px;
-}
-
-.file-size-warning {
-  font-size: 12px;
-  color: #ffa726;
-  margin-top: 4px;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
-  .container {
-    max-width: 100%;
-  }
-  
-  .card {
-    padding: 20px;
-  }
-  
-  .document-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  .document-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-  
-  .file-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .file-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-}
-</style>
+        /* Мобильная адаптивность */
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: -280px; }
+            .sidebar.open { left: 0; }
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="mode-switcher">
-  <button class="mode-btn" id="modeToggle">Режим админа</button>
+<div id="authScreen">
+    <div class="auth-card">
+        <h1 style="margin-bottom: 8px;">Добро пожаловать</h1>
+        <p style="color: var(--text-dim); margin-bottom: 30px;">Введите ваше имя для начала работы</p>
+        <input type="text" id="loginInput" placeholder="Ваше имя..." style="text-align: center; font-size: 18px;">
+        <button class="btn" style="margin-top: 20px;" onclick="handleLogin()">Войти в систему</button>
+        <p id="authHint" style="font-size: 12px; color: var(--text-dim); margin-top: 15px;">Код админа откроет панель управления</p>
+    </div>
 </div>
 
-<div class="container">
-  <!-- Интерфейс пользователя -->
-  <div id="userInterface">
-    <div class="card">
-      <h2>📤 Отправить документы</h2>
-      
-      <div class="form-group">
-        <label>Ваше имя (для идентификации)</label>
-        <input type="text" id="userName" placeholder="Введите ваше имя">
-      </div>
-      
-      <div class="form-group">
-        <label>Документ 1 (макс. 1MB)</label>
-        <input type="file" id="file1" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png">
-        <input type="text" id="title1" placeholder="Описание документа 1" class="mt-20">
-      </div>
-      
-      <div class="form-group">
-        <label>Документ 2 (макс. 1MB)</label>
-        <input type="file" id="file2" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png">
-        <input type="text" id="title2" placeholder="Описание документа 2" class="mt-20">
-      </div>
-      
-      <div class="form-group">
-        <label>Комментарий для админа (необязательно)</label>
-        <textarea id="userComment" placeholder="Дополнительная информация..."></textarea>
-      </div>
-      
-      <button class="btn btn-primary" id="submitBtn" onclick="uploadDocuments()" disabled>
-        📤 Отправить документы
-      </button>
-      
-      <div class="progress-container" id="progressContainer">
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
-        <div class="progress-text" id="progressText">0%</div>
-      </div>
-      
-      <div class="status" id="status">
-        Заполните все поля для отправки документов
-      </div>
-    </div>
+<nav class="sidebar" id="mainSidebar">
+    <div class="sidebar-header">DOCFLOW PRO</div>
     
-    <div class="card">
-      <h2>📥 Полученные ответы</h2>
-      <div id="receivedDocuments" class="documents-list">
-        <!-- Сюда будут добавляться полученные документы -->
-      </div>
-      <div class="text-center mt-20">
-        <button class="btn btn-secondary btn-small" onclick="clearUserData()">Очистить мои данные</button>
-      </div>
+    <div id="userNav">
+        <div class="nav-item active" onclick="switchView('uploadView', this)">📤 Отправить</div>
+        <div class="nav-item" onclick="switchView('responsesView', this)">📥 Мои ответы</div>
     </div>
-  </div>
-  
-  <!-- Интерфейс админа -->
-  <div id="adminInterface" class="hidden">
-    <div class="card">
-      <h2>👑 Панель администратора</h2>
-      <div class="mb-20">
-        <button class="btn btn-secondary" onclick="clearAllData()">Очистить все данные</button>
-        <button class="btn btn-secondary" onclick="refreshAdminView()" style="margin-left: 10px;">Обновить</button>
-        <div class="status status-info mt-20" id="adminStats">
-          Загрузка статистики...
-        </div>
-      </div>
-      
-      <div class="documents-list" id="adminDocumentsList">
-        <!-- Сюда будут добавляться документы от пользователей -->
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- Модальное окно для отправки ответа -->
-<div class="modal" id="responseModal">
-  <div class="modal-content">
-    <h2>Отправить ответ пользователю</h2>
-    
-    <div class="form-group">
-      <label>Получатель</label>
-      <input type="text" id="responseRecipient" readonly>
+    <div id="adminNav" style="display: none;">
+        <div class="nav-item" onclick="switchView('adminDashboard', this)">👑 Панель управления</div>
     </div>
-    
-    <div class="form-group">
-      <label>Документ для отправки (макс. 1MB)</label>
-      <input type="file" id="responseFile" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png">
+
+    <div style="margin-top: auto;">
+        <div class="nav-item" onclick="location.reload()" style="color: #ef4444;">🚪 Выход</div>
     </div>
-    
-    <div class="form-group">
-      <label>Комментарий</label>
-      <textarea id="responseComment" placeholder="Комментарий к отправляемому документу..."></textarea>
+</nav>
+
+<main class="main-wrapper">
+    <div id="uploadView" class="view-section active">
+        <div class="card">
+            <h2>Новая заявка</h2>
+            <div style="display: grid; gap: 20px;">
+                <div>
+                    <label>Документ 1 (Описание + Файл)</label>
+                    <input type="text" id="title1" placeholder="Название документа">
+                    <input type="file" id="file1">
+                </div>
+                <div>
+                    <label>Документ 2 (Описание + Файл)</label>
+                    <input type="text" id="title2" placeholder="Название документа">
+                    <input type="file" id="file2">
+                </div>
+                <textarea id="userComment" placeholder="Ваш комментарий..."></textarea>
+                <button id="submitBtn" class="btn" onclick="uploadDocuments()">Отправить документы</button>
+            </div>
+            <div id="uploadStatus" style="margin-top: 15px; font-size: 14px;"></div>
+        </div>
     </div>
-    
-    <div class="form-group">
-      <button class="btn btn-primary" onclick="sendResponse()">📤 Отправить ответ</button>
-      <button class="btn btn-secondary" onclick="closeModal()" style="margin-left: 10px;">Отмена</button>
+
+    <div id="responsesView" class="view-section">
+        <h2>Ваши документы от администрации</h2>
+        <div id="receivedDocumentsList"></div>
     </div>
-    
-    <div class="status" id="responseStatus"></div>
-  </div>
-</div>
+
+    <div id="adminDashboard" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Входящие документы</h2>
+            <button class="btn" style="width: auto;" onclick="clearAllData()">Очистить базу</button>
+        </div>
+        <div id="adminDocsList"></div>
+    </div>
+</main>
 
 <script>
-// Глобальные переменные
-let currentMode = 'user';
-let currentUser = localStorage.getItem('document_user_id') || generateUserId();
-let selectedUserId = null;
-let selectedRequestId = null;
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+    const ADMIN_CODE = "admin123";
+    let currentUser = localStorage.getItem('doc_user_id') || 'user_' + Date.now();
+    let currentUserName = "";
+    const MAX_SIZE = 1024 * 1024; // 1MB
 
-// Генерация ID пользователя
-function generateUserId() {
-  const id = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-  localStorage.setItem('document_user_id', id);
-  return id;
-}
+    // ЛОГИКА ВХОДА
+    function handleLogin() {
+        const input = document.getElementById('loginInput').value.trim();
+        if (!input) return alert("Введите имя");
 
-// Инициализация
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Документ загружен');
-  
-  // Восстановление имени пользователя
-  const savedName = localStorage.getItem('document_user_name');
-  if (savedName) {
-    document.getElementById('userName').value = savedName;
-  }
-  
-  // Проверка валидности формы
-  checkFormValidity();
-  
-  // Загрузка полученных документов для пользователя
-  loadReceivedDocuments();
-  
-  // Обработчики событий
-  document.getElementById('userName').addEventListener('input', function() {
-    localStorage.setItem('document_user_name', this.value);
-    checkFormValidity();
-  });
-  
-  document.getElementById('title1').addEventListener('input', checkFormValidity);
-  document.getElementById('title2').addEventListener('input', checkFormValidity);
-  document.getElementById('file1').addEventListener('change', checkFormValidity);
-  document.getElementById('file2').addEventListener('change', checkFormValidity);
-  
-  // Переключение режимов
-  document.getElementById('modeToggle').addEventListener('click', toggleMode);
-  
-  // Изначально обновляем статистику
-  updateAdminStats();
-});
+        currentUserName = input;
+        localStorage.setItem('doc_user_name', input);
+        localStorage.setItem('doc_user_id', currentUser);
 
-// Проверка валидности формы
-function checkFormValidity() {
-  const userName = document.getElementById('userName').value.trim();
-  const file1 = document.getElementById('file1').files[0];
-  const file2 = document.getElementById('file2').files[0];
-  const title1 = document.getElementById('title1').value.trim();
-  const title2 = document.getElementById('title2').value.trim();
-  
-  // Проверяем размеры файлов
-  const file1Valid = file1 ? file1.size <= MAX_FILE_SIZE : false;
-  const file2Valid = file2 ? file2.size <= MAX_FILE_SIZE : false;
-  
-  const isValid = userName && file1 && file2 && title1 && title2 && file1Valid && file2Valid;
-  const submitBtn = document.getElementById('submitBtn');
-  
-  submitBtn.disabled = !isValid;
-  
-  if (isValid) {
-    document.getElementById('status').textContent = 'Форма готова к отправке';
-    document.getElementById('status').className = 'status status-info';
-  } else {
-    document.getElementById('status').textContent = 'Заполните все поля для отправки документов (макс. размер файла: 1MB)';
-    document.getElementById('status').className = 'status';
-  }
-}
+        document.getElementById('authScreen').classList.add('hidden');
 
-// Обновление статистики админа
-function updateAdminStats() {
-  try {
-    const docs = JSON.parse(localStorage.getItem('document_system') || '[]');
-    const responses = JSON.parse(localStorage.getItem('user_responses') || '{}');
-    
-    let responseCount = 0;
-    for (const userId in responses) {
-      responseCount += responses[userId].length;
-    }
-    
-    const dataSize = (JSON.stringify(localStorage).length / 1024).toFixed(1);
-    
-    const statsElement = document.getElementById('adminStats');
-    if (statsElement) {
-      let statsHTML = `Всего документов: ${docs.length} | Всего ответов: ${responseCount} | Размер данных: ${dataSize} KB`;
-      
-      if (parseFloat(dataSize) > 5000) { // Более 5MB
-        statsHTML += `<br><span style="color: #e74c3c; font-size: 12px;">⚠ Внимание: размер данных превышает 5MB. Рекомендуется удалить старые документы.</span>`;
-      }
-      
-      statsElement.innerHTML = statsHTML;
-    }
-  } catch (error) {
-    console.error('Ошибка при обновлении статистики:', error);
-  }
-}
-
-// Переключение между режимами пользователя и админа
-function toggleMode() {
-  console.log('Переключение режима, текущий режим:', currentMode);
-  
-  if (currentMode === 'user') {
-    // Запрашиваем пароль для входа в админку
-    const password = prompt('Введите пароль для входа в админ-панель:');
-    
-    if (password === 'admin') { // Простой пароль для демо
-      console.log('Пароль верный, переключаемся в админку');
-      currentMode = 'admin';
-      
-      // Показываем админку, скрываем пользовательский интерфейс
-      document.getElementById('userInterface').classList.add('hidden');
-      document.getElementById('adminInterface').classList.remove('hidden');
-      document.getElementById('modeToggle').textContent = 'Режим пользователя';
-      
-      // Загружаем документы в админку
-      loadAdminDocuments();
-      updateAdminStats();
-      
-      console.log('Админка загружена');
-    } else if (password !== null) {
-      alert('Неверный пароль! Используйте пароль: admin');
-    }
-  } else {
-    console.log('Переключаемся в режим пользователя');
-    currentMode = 'user';
-    
-    // Показываем пользовательский интерфейс, скрываем админку
-    document.getElementById('adminInterface').classList.add('hidden');
-    document.getElementById('userInterface').classList.remove('hidden');
-    document.getElementById('modeToggle').textContent = 'Режим админа';
-    
-    // Загружаем полученные документы для пользователя
-    loadReceivedDocuments();
-    
-    console.log('Пользовательский интерфейс загружен');
-  }
-}
-
-// Чтение файла как DataURL
-function readFileAsDataURL(file) {
-  return new Promise((resolve, reject) => {
-    if (!file) {
-      reject(new Error('Файл не выбран'));
-      return;
-    }
-    
-    if (file.size > MAX_FILE_SIZE) {
-      reject(new Error(`Файл слишком большой (${(file.size / (1024 * 1024)).toFixed(2)} MB). Максимальный размер: 1MB`));
-      return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      resolve({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        data: e.target.result
-      });
-    };
-    reader.onerror = function(e) {
-      reject(new Error('Ошибка чтения файла'));
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-// Загрузка документов пользователем
-async function uploadDocuments() {
-  console.log('Начинаем загрузку документов');
-  
-  const userName = document.getElementById('userName').value.trim();
-  const file1 = document.getElementById('file1').files[0];
-  const file2 = document.getElementById('file2').files[0];
-  const title1 = document.getElementById('title1').value.trim();
-  const title2 = document.getElementById('title2').value.trim();
-  const comment = document.getElementById('userComment').value.trim();
-  
-  // Проверяем форму ещё раз перед отправкой
-  if (!userName || !file1 || !file2 || !title1 || !title2) {
-    showStatus('Пожалуйста, заполните все поля перед отправкой', 'error');
-    return;
-  }
-
-  // Показываем прогресс-бар
-  const progressContainer = document.getElementById('progressContainer');
-  const progressFill = document.getElementById('progressFill');
-  const progressText = document.getElementById('progressText');
-  const status = document.getElementById('status');
-  
-  progressContainer.classList.add('visible');
-  status.textContent = 'Чтение файлов...';
-  status.className = 'status status-info';
-  
-  try {
-    // Имитация прогресса загрузки
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-      progress += 10;
-      if (progress > 90) {
-        clearInterval(progressInterval);
-        return;
-      }
-      progressFill.style.width = progress + '%';
-      progressText.textContent = progress + '%';
-    }, 200);
-    
-    // Читаем файлы как DataURL
-    status.textContent = 'Чтение файла 1...';
-    const file1Data = await readFileAsDataURL(file1);
-    
-    status.textContent = 'Чтение файла 2...';
-    const file2Data = await readFileAsDataURL(file2);
-    
-    // Сохранение документа в системе
-    saveDocumentToSystem(userName, currentUser, [
-      { 
-        ...file1Data,
-        title: title1
-      },
-      { 
-        ...file2Data,
-        title: title2
-      }
-    ], comment);
-    
-    clearInterval(progressInterval);
-    progressFill.style.width = '100%';
-    progressText.textContent = '100%';
-    
-    // Сброс формы
-    document.getElementById('file1').value = '';
-    document.getElementById('file2').value = '';
-    document.getElementById('title1').value = '';
-    document.getElementById('title2').value = '';
-    document.getElementById('userComment').value = '';
-    
-    // Скрываем прогресс бар
-    setTimeout(() => {
-      progressContainer.classList.remove('visible');
-      progressFill.style.width = '0%';
-      progressText.textContent = '0%';
-    }, 1000);
-    
-    // Обновляем статистику и список документов в админке
-    updateAdminStats();
-    
-    if (currentMode === 'admin') {
-      loadAdminDocuments();
-    }
-    
-    showStatus('✅ Документы успешно отправлены! Админ получил уведомление.', 'success');
-    checkFormValidity();
-    
-  } catch (error) {
-    console.error('Ошибка при загрузке документов:', error);
-    showStatus(`❌ ${error.message}`, 'error');
-    progressContainer.classList.remove('visible');
-    progressFill.style.width = '0%';
-    progressText.textContent = '0%';
-  }
-}
-
-// Сохранение документа в системе
-function saveDocumentToSystem(userName, userId, files, comment) {
-  try {
-    // Получаем существующие документы
-    const existingDocs = JSON.parse(localStorage.getItem('document_system') || '[]');
-    
-    // Создаем новый документ
-    const newDoc = {
-      id: 'doc_' + Date.now(),
-      userId: userId,
-      userName: userName,
-      files: files,
-      comment: comment,
-      date: new Date().toISOString(),
-      status: 'pending',
-      responses: []
-    };
-    
-    console.log('Сохраняем документ:', newDoc);
-    
-    // Добавляем документ в систему
-    existingDocs.push(newDoc);
-    
-    // Сохраняем обратно в localStorage
-    localStorage.setItem('document_system', JSON.stringify(existingDocs));
-    
-    console.log('Документ успешно сохранен, всего документов:', existingDocs.length);
-  } catch (error) {
-    console.error('Ошибка сохранения документа:', error);
-    throw error;
-  }
-}
-
-// Загрузка документов в админ-панель
-function loadAdminDocuments() {
-  console.log('Загружаем документы в админку');
-  
-  const container = document.getElementById('adminDocumentsList');
-  
-  try {
-    const docs = JSON.parse(localStorage.getItem('document_system') || '[]');
-    console.log('Найдено документов:', docs.length);
-    
-    if (docs.length === 0) {
-      container.innerHTML = '<div class="text-center">Нет полученных документов. Пользователи еще не отправляли документы.</div>';
-      return;
-    }
-    
-    // Сортируем по дате (новые сверху)
-    docs.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    let html = '';
-    
-    docs.forEach((doc, index) => {
-      const date = new Date(doc.date).toLocaleString('ru-RU');
-      const fileCount = doc.files ? doc.files.length : 0;
-      
-      // Форматируем информацию о файлах
-      const filesHtml = doc.files ? doc.files.map((file, idx) => {
-        const sizeMB = file.size ? (file.size / (1024 * 1024)).toFixed(2) : '0.00';
-        return `
-          <div class="file-item">
-            <div class="file-info">
-              <div class="file-name">${idx + 1}. ${file.title} - ${file.name}</div>
-              <div class="file-size">${sizeMB} MB</div>
-            </div>
-            <div class="file-actions">
-              <button class="btn btn-download btn-small" onclick="downloadAdminFile('${doc.id}', ${idx})">
-                📥 Скачать
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('') : '';
-      
-      html += `
-        <div class="document-item">
-          <div class="document-header">
-            <div class="document-title">📄 Документы от: ${doc.userName}</div>
-            <div class="document-user">ID: ${doc.userId.substring(0, 12)}...</div>
-          </div>
-          <div class="document-content">
-            <div class="document-info">
-              <div class="document-description">
-                <strong>${fileCount} файл${fileCount > 1 ? 'а' : ''}</strong>
-                ${doc.comment ? `<br><small>💬 ${doc.comment}</small>` : ''}
-              </div>
-              <div class="document-date">📅 ${date}</div>
-              <div class="document-files">
-                ${filesHtml}
-              </div>
-            </div>
-            <div class="document-actions">
-              <button class="btn btn-primary btn-small" onclick="openResponseModal('${doc.userId}', '${doc.id}', '${doc.userName}')">
-                📤 Ответить
-              </button>
-              <button class="btn btn-secondary btn-small" onclick="deleteDocument('${doc.id}')">
-                🗑 Удалить
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-    
-    container.innerHTML = html;
-    console.log('Документы успешно отображены в админке');
-  } catch (error) {
-    console.error('Ошибка при загрузке документов в админку:', error);
-    container.innerHTML = '<div class="status status-error">Ошибка при загрузке документов. Попробуйте обновить страницу.</div>';
-  }
-}
-
-// Скачивание файла из админки
-function downloadAdminFile(docId, fileIndex) {
-  try {
-    const docs = JSON.parse(localStorage.getItem('document_system') || '[]');
-    const doc = docs.find(d => d.id === docId);
-    
-    if (!doc) {
-      alert('Документ не найден');
-      return;
-    }
-    
-    if (!doc.files || !doc.files[fileIndex]) {
-      alert('Файл не найден');
-      return;
-    }
-    
-    const file = doc.files[fileIndex];
-    
-    if (!file.data) {
-      alert('Файл не содержит данных для скачивания');
-      return;
-    }
-    
-    // Создаем ссылку для скачивания
-    const link = document.createElement('a');
-    link.href = file.data;
-    link.download = `${doc.userName}_${file.title}_${file.name}`;
-    link.style.display = 'none';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log('Файл скачан:', file.name);
-  } catch (error) {
-    console.error('Ошибка при скачивании файла:', error);
-    alert('Ошибка при скачивании файла');
-  }
-}
-
-// Удаление документа из админки
-function deleteDocument(docId) {
-  if (confirm('Вы уверены, что хотите удалить этот документ? Это действие нельзя отменить.')) {
-    try {
-      const docs = JSON.parse(localStorage.getItem('document_system') || '[]');
-      const filteredDocs = docs.filter(d => d.id !== docId);
-      localStorage.setItem('document_system', JSON.stringify(filteredDocs));
-      
-      // Перезагружаем список
-      loadAdminDocuments();
-      updateAdminStats();
-      
-      showStatus('✅ Документ успешно удален', 'success');
-    } catch (error) {
-      console.error('Ошибка при удалении документа:', error);
-      alert('Ошибка при удалении документа');
-    }
-  }
-}
-
-// Обновление вида админа
-function refreshAdminView() {
-  console.log('Обновляем админку');
-  loadAdminDocuments();
-  updateAdminStats();
-}
-
-// Открытие модального окна для отправки ответа
-function openResponseModal(userId, requestId, userName) {
-  console.log('Открываем модальное окно для ответа пользователю:', userName);
-  
-  selectedUserId = userId;
-  selectedRequestId = requestId;
-  
-  document.getElementById('responseRecipient').value = `${userName}`;
-  document.getElementById('responseModal').classList.add('active');
-  document.getElementById('responseFile').value = '';
-  document.getElementById('responseComment').value = '';
-  document.getElementById('responseStatus').textContent = '';
-  document.getElementById('responseStatus').className = 'status';
-}
-
-// Закрытие модального окна
-function closeModal() {
-  document.getElementById('responseModal').classList.remove('active');
-}
-
-// Отправка ответа пользователю
-async function sendResponse() {
-  const fileInput = document.getElementById('responseFile');
-  const comment = document.getElementById('responseComment').value.trim();
-  const statusElement = document.getElementById('responseStatus');
-  
-  if (!fileInput.files[0]) {
-    statusElement.textContent = 'Выберите файл для отправки';
-    statusElement.className = 'status status-error';
-    return;
-  }
-  
-  const file = fileInput.files[0];
-  
-  if (file.size > MAX_FILE_SIZE) {
-    statusElement.textContent = `Файл слишком большой (${(file.size / (1024 * 1024)).toFixed(2)} MB). Максимальный размер: 1MB`;
-    statusElement.className = 'status status-error';
-    return;
-  }
-  
-  try {
-    statusElement.textContent = 'Чтение файла...';
-    statusElement.className = 'status status-info';
-    
-    // Читаем файл как DataURL
-    const fileData = await readFileAsDataURL(file);
-    
-    // Сохраняем ответ в системе
-    const allResponses = JSON.parse(localStorage.getItem('user_responses') || '{}');
-    
-    if (!allResponses[selectedUserId]) {
-      allResponses[selectedUserId] = [];
-    }
-    
-    allResponses[selectedUserId].push({
-      requestId: selectedRequestId,
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      fileData: fileData.data, // Сохраняем DataURL файла
-      comment: comment,
-      date: new Date().toISOString(),
-      from: 'Администратор'
-    });
-    
-    localStorage.setItem('user_responses', JSON.stringify(allResponses));
-    
-    statusElement.textContent = '✅ Ответ успешно отправлен пользователю!';
-    statusElement.className = 'status status-success';
-    
-    // Обновляем статистику
-    updateAdminStats();
-    
-    // Закрываем модальное окно через 2 секунды
-    setTimeout(() => {
-      closeModal();
-    }, 2000);
-    
-  } catch (error) {
-    console.error('Ошибка при отправке ответа:', error);
-    statusElement.textContent = `❌ ${error.message}`;
-    statusElement.className = 'status status-error';
-  }
-}
-
-// Загрузка полученных документов для пользователя
-function loadReceivedDocuments() {
-  console.log('Загружаем полученные ответы для пользователя');
-  
-  const container = document.getElementById('receivedDocuments');
-  
-  try {
-    const allResponses = JSON.parse(localStorage.getItem('user_responses') || '{}');
-    const userResponses = allResponses[currentUser] || [];
-    
-    console.log('Найдено ответов для пользователя:', userResponses.length);
-    
-    if (userResponses.length === 0) {
-      container.innerHTML = '<div class="text-center">Нет полученных ответов от администратора. Администратор еще не отправлял вам документы.</div>';
-      return;
-    }
-    
-    // Сортируем по дате (новые сверху)
-    userResponses.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    let html = '';
-    
-    userResponses.forEach((item, index) => {
-      const date = new Date(item.date).toLocaleString('ru-RU');
-      const sizeMB = item.fileSize ? (item.fileSize / (1024 * 1024)).toFixed(2) : '?';
-      
-      html += `
-        <div class="document-item">
-          <div class="document-header">
-            <div class="document-title">📤 Ответ от администратора</div>
-            <div class="document-date">${date}</div>
-          </div>
-          <div class="document-content">
-            <div class="document-info">
-              <div class="document-description">
-                <strong>Файл:</strong> ${item.fileName} (${sizeMB} MB)
-                ${item.comment ? `<br><small>💬 ${item.comment}</small>` : ''}
-              </div>
-            </div>
-            <div class="document-actions">
-              <button class="btn btn-download btn-small" onclick="downloadReceivedFile(${index})">
-                📥 Скачать
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-    
-    container.innerHTML = html;
-  } catch (error) {
-    console.error('Ошибка при загрузке ответов:', error);
-    container.innerHTML = '<div class="status status-error">Ошибка при загрузке ответов</div>';
-  }
-}
-
-// Скачивание полученного файла
-function downloadReceivedFile(responseIndex) {
-  try {
-    const allResponses = JSON.parse(localStorage.getItem('user_responses') || '{}');
-    const userResponses = allResponses[currentUser] || [];
-    
-    if (!userResponses[responseIndex]) {
-      alert('Файл не найден');
-      return;
-    }
-    
-    const response = userResponses[responseIndex];
-    
-    if (!response.fileData) {
-      alert('Файл не содержит данных для скачивания');
-      return;
-    }
-    
-    // Создаем ссылку для скачивания
-    const link = document.createElement('a');
-    link.href = response.fileData;
-    link.download = `Ответ_администратора_${response.fileName}`;
-    link.style.display = 'none';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log('Файл скачан:', response.fileName);
-  } catch (error) {
-    console.error('Ошибка при скачивании файла:', error);
-    alert('Ошибка при скачивании файла');
-  }
-}
-
-// Очистка всех данных
-function clearAllData() {
-  if (confirm('ВНИМАНИЕ: Вы уверены, что хотите удалить ВСЕ данные (документы, ответы, пользователей)? Это действие нельзя отменить.')) {
-    localStorage.clear();
-    alert('Все данные очищены. Страница будет перезагружена.');
-    location.reload();
-  }
-}
-
-// Очистка данных пользователя
-function clearUserData() {
-  if (confirm('Очистить все ваши документы и ответы? Это не затронет других пользователей.')) {
-    try {
-      // Удаляем документы пользователя
-      const docs = JSON.parse(localStorage.getItem('document_system') || '[]');
-      const filteredDocs = docs.filter(doc => doc.userId !== currentUser);
-      localStorage.setItem('document_system', JSON.stringify(filteredDocs));
-      
-      // Удаляем ответы для пользователя
-      const allResponses = JSON.parse(localStorage.getItem('user_responses') || '{}');
-      delete allResponses[currentUser];
-      localStorage.setItem('user_responses', JSON.stringify(allResponses));
-      
-      alert('Ваши данные очищены!');
-      loadReceivedDocuments();
-      updateAdminStats();
-      
-      // Если мы в режиме админа, обновляем список
-      if (currentMode === 'admin') {
-        loadAdminDocuments();
-      }
-    } catch (error) {
-      console.error('Ошибка при очистке данных пользователя:', error);
-      alert('Ошибка при очистке данных');
-    }
-  }
-}
-
-// Вспомогательная функция для отображения статуса
-function showStatus(message, type = 'info') {
-  const status = document.getElementById('status');
-  if (status) {
-    status.textContent = message;
-    status.className = `status status-${type}`;
-    
-    // Автоматическое скрытие для успешных сообщений
-    if (type === 'success') {
-      setTimeout(() => {
-        if (status.textContent === message) {
-          status.textContent = '';
-          status.className = 'status';
+        if (input === ADMIN_CODE) {
+            setupAdminMode();
+        } else {
+            setupUserMode();
         }
-      }, 5000);
     }
-  }
-}
 
-// Инициализация Service Worker для PWA
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register(
-    URL.createObjectURL(new Blob([`
-      self.addEventListener('fetch', e => {});
-    `], { type: "text/javascript" }))
-  );
-}
+    function setupAdminMode() {
+        document.getElementById('adminNav').style.display = 'block';
+        document.getElementById('userNav').style.display = 'none';
+        switchView('adminDashboard', document.querySelector('#adminNav .nav-item'));
+        loadAdminDocs();
+    }
+
+    function setupUserMode() {
+        document.getElementById('adminNav').style.display = 'none';
+        document.getElementById('userNav').style.display = 'block';
+        loadUserResponses();
+    }
+
+    // НАВИГАЦИЯ
+    function switchView(viewId, el) {
+        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        
+        document.getElementById(viewId).classList.add('active');
+        el.classList.add('active');
+
+        if(viewId === 'adminDashboard') loadAdminDocs();
+        if(viewId === 'responsesView') loadUserResponses();
+    }
+
+    // РАБОТА С ДАННЫМИ (Файлы)
+    async function uploadDocuments() {
+        const f1 = document.getElementById('file1').files[0];
+        const f2 = document.getElementById('file2').files[0];
+        const t1 = document.getElementById('title1').value;
+        const t2 = document.getElementById('title2').value;
+
+        if(!f1 || !f2 || !t1 || !t2) return alert("Заполните все поля");
+
+        try {
+            const data1 = await toBase64(f1);
+            const data2 = await toBase64(f2);
+
+            const newEntry = {
+                id: Date.now(),
+                userId: currentUser,
+                userName: currentUserName,
+                date: new Date().toLocaleString(),
+                comment: document.getElementById('userComment').value,
+                files: [
+                    { title: t1, name: f1.name, data: data1 },
+                    { title: t2, name: f2.name, data: data2 }
+                ]
+            };
+
+            const db = JSON.parse(localStorage.getItem('doc_db') || '[]');
+            db.push(newEntry);
+            localStorage.setItem('doc_db', JSON.stringify(db));
+
+            alert("✅ Успешно отправлено!");
+            location.reload();
+        } catch (e) { alert("Ошибка: " + e.message); }
+    }
+
+    function loadAdminDocs() {
+        const db = JSON.parse(localStorage.getItem('doc_db') || '[]');
+        const list = document.getElementById('adminDocsList');
+        list.innerHTML = db.length ? '' : 'Пока ничего нет';
+
+        db.reverse().forEach(entry => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between">
+                    <strong>👤 ${entry.userName}</strong>
+                    <span class="status-badge">${entry.date}</span>
+                </div>
+                <p style="font-size:14px; color:var(--text-dim)">${entry.comment || 'Нет комментария'}</p>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    ${entry.files.map((f, i) => `<button class="btn" style="padding:6px 12px; font-size:12px;" onclick="download('${f.data}', '${f.name}')">💾 ${f.title}</button>`).join('')}
+                </div>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    function loadUserResponses() {
+        const responses = JSON.parse(localStorage.getItem('doc_responses') || '{}')[currentUser] || [];
+        const list = document.getElementById('receivedDocumentsList');
+        list.innerHTML = responses.length ? '' : '<div class="card">У вас пока нет новых ответов</div>';
+        
+        responses.forEach(res => {
+            list.innerHTML += `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between">
+                        <strong>📩 Ответ от Администратора</strong>
+                        <span class="status-badge">${res.date}</span>
+                    </div>
+                    <p>${res.comment}</p>
+                    <button class="btn" style="width:auto" onclick="download('${res.fileData}', '${res.fileName}')">Скачать документ</button>
+                </div>`;
+        });
+    }
+
+    // УТИЛИТЫ
+    const toBase64 = file => new Promise((resolve, reject) => {
+        if(file.size > MAX_SIZE) reject(new Error("Файл больше 1MB"));
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+
+    function download(data, name) {
+        const a = document.createElement("a");
+        a.href = data;
+        a.download = name;
+        a.click();
+    }
+
+    function clearAllData() {
+        if(confirm("Удалить всё?")) {
+            localStorage.removeItem('doc_db');
+            localStorage.removeItem('doc_responses');
+            loadAdminDocs();
+        }
+    }
 </script>
-
 </body>
 </html>
